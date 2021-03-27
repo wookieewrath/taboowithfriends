@@ -69,7 +69,16 @@ const mockData = {
   ],
 };
 
-function HostView() {
+
+const useStyles = makeStyles({
+    root: {
+      width: 300,
+    },
+    input: {
+      width: 45,
+    },
+  });
+
   const theme = createMuiTheme({
     palette: {
       primary: {
@@ -78,14 +87,8 @@ function HostView() {
     },
   });
 
-  const useStyles = makeStyles({
-    root: {
-      width: 300,
-    },
-    input: {
-      width: 45,
-    },
-  });
+function HostView() {
+
   const classes = useStyles();
 
   const [gameSettings, setGameSettings] = useState({
