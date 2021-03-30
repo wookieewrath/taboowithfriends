@@ -10,7 +10,7 @@ function PlayerChip({ isHost, name, deletePlayer }) {
       style={{ margin: 4 }}
       color="primary"
       icon={<SentimentVerySatisfiedIcon />}
-    ></Chip>
+    />
   );
 }
 
