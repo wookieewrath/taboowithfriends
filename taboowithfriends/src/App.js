@@ -1,14 +1,22 @@
 import './App.css';
 import HostView from './components/HostView';
 import LandingPage from "./components/LandingPage"
+import PlayerView from './components/PlayerView';
+import { BrowserRouter as Router, Switch, Route} from "react-router-dom"
 
 function App() {
   return (
+    <Router>
     <div className="App">
       <header className="App-header">
-          <HostView></HostView>
+        <Switch>
+          <Route path ="/" exact component={LandingPage}/>
+          <Route path ="/host/:roomID/:playerID" exact component={HostView}/>
+          <Route path ="/play/:roomID/:playerID" exact component={PlayerView}/>
+        </Switch>
       </header>
     </div>
+    </Router>
   );
 }
 

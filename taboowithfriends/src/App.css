@@ -23,7 +23,9 @@
   font-size: calc(10px + 2vmin);
   color: rgb(104, 104, 104);
   overflow-y: auto;
-  padding: 20px;
+  padding: 0px;
+  padding-left: 15px;
+  padding-right: 15px;
 }
 
 .App-link {
