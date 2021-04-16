@@ -1,6 +1,9 @@
 import "./App.css";
 import HostView from "./components/HostView";
 import LandingPage from "./components/LandingPage";
+import PlayerView from "./components/PlayerView";
+//import GameCard from "./components/GameCard";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
   return (
@@ -15,7 +18,7 @@ function App() {
               exact
               component={PlayerView}
             />
-            <Route path="/game" exact component={GameCard} />
+            {/* <Route path="/game" exact component={GameCard} /> */}
           </Switch>
         </header>
       </div>
