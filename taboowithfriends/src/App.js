@@ -6,7 +6,8 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-          <HostView></HostView>
+          Taboo with Friends
+          <LandingPage></LandingPage>
       </header>
     </div>
   );
