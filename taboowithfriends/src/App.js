@@ -1,4 +1,5 @@
 import './App.css';
+import HostView from './components/HostView';
 import LandingPage from "./components/LandingPage"
 
 function App() {
