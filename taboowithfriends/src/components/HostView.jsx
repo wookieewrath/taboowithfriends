@@ -15,7 +15,6 @@ import {
 import Typography from "@material-ui/core/Typography";
 import React, { useEffect, useState } from "react";
 import TeamsContainer from "./TeamsContainer";
-import { db } from "../constants";
 
 const mockData = {
   someLargeTeamIdentifier: [
@@ -70,7 +69,6 @@ const mockData = {
   ],
 };
 
-// Styling that apparently can't be inline :( !
 const useStyles = makeStyles({
   root: {
     width: 300,
@@ -79,6 +77,7 @@ const useStyles = makeStyles({
     width: 45,
   },
 });
+
 const theme = createMuiTheme({
   palette: {
     primary: {
@@ -90,8 +89,6 @@ const theme = createMuiTheme({
 function HostView() {
   const classes = useStyles();
 
-  const [gameID, setGameID] = useState(null);
-  const [mockStatefulData, setMockStatefulData] = useState(mockData); // to be removed :D ..
   const [gameSettings, setGameSettings] = useState({
     gameMode: "turn",
     turnLimit: 5,
@@ -102,18 +99,7 @@ function HostView() {
     correctReward: 2,
   });
 
-  useEffect(() => {
-    db.collection("Games")
-      .add({gameSettings})
-      .then((docRef) => setGameID(docRef.id));
-  }, []);
-
-  useEffect(() => {
-    if(gameID !== null){
-      db.collection("Games").doc(gameID).set({gameSettings});
-    }
-  }, [gameSettings]);
-
+  const [mockStatefulData, setMockStatefulData] = useState(mockData);
 
   function deleteTeam(teamToDelete) {
     setMockStatefulData((prevState) => {
@@ -169,11 +155,26 @@ function HostView() {
     });
   }
 
+  useEffect(() => {
+    console.log(mockStatefulData);
+    console.log("A change happend :o !");
+  }, [mockStatefulData]);
+
+  useEffect(() => {
+    console.log("Game Mode: " + gameSettings.gameMode);
+    console.log("Turn Limit: " + gameSettings.turnLimit);
+    console.log("Score Limit: " + gameSettings.scoreLimit);
+    console.log("Seconds Per Round: " + gameSettings.secondsPerRound);
+    console.log("Buzz Penalty: " + gameSettings.buzzPenalty);
+    console.log("Skip Penalty: " + gameSettings.skipPenalty);
+    console.log("Correct Reward: " + gameSettings.correctReward);
+    console.log("");
+  }, [gameSettings]);
+
   return (
     <MuiThemeProvider theme={theme}>
-      {console.log(gameSettings)}
       <div>Your Room ID:</div>
-      <div>{gameID}</div>
+      <div>RTCBV</div>
       <p></p>
       <div className={classes.root}>
         <FormControl component="fieldset">
@@ -182,11 +183,9 @@ function HostView() {
             aria-label="Game Mode"
             name="Game Mode"
             value={gameSettings.gameMode}
-            onChange={(e, newVal) => {
-              if (gameSettings.gameMode !== newVal) {
-                setGameSettings({ ...gameSettings, gameMode: e.target.value });
-              }
-            }}
+            onChange={(e, newVal) =>
+              setGameSettings({ ...gameSettings, gameMode: e.target.value })
+            }
           >
             <FormControlLabel
               value="turn"
@@ -210,11 +209,9 @@ function HostView() {
           min={1}
           max={10}
           valueLabelDisplay="auto"
-          onChange={(e, newVal) => {
-            if (gameSettings.turnLimit !== newVal) {
-              setGameSettings({ ...gameSettings, turnLimit: newVal });
-            }
-          }}
+          onChange={(e, newVal) =>
+            setGameSettings({ ...gameSettings, turnLimit: newVal })
+          }
           disabled={gameSettings.gameMode === "score"}
         />
 
@@ -227,11 +224,9 @@ function HostView() {
           min={10}
           max={30}
           valueLabelDisplay="auto"
-          onChange={(e, newVal) => {
-            if (gameSettings.scoreLimit !== newVal) {
-              setGameSettings({ ...gameSettings, scoreLimit: newVal });
-            }
-          }}
+          onChange={(e, newVal) =>
+            setGameSettings({ ...gameSettings, scoreLimit: newVal })
+          }
           disabled={gameSettings.gameMode === "turn"}
         />
 
@@ -244,11 +239,9 @@ function HostView() {
           min={20}
           max={120}
           valueLabelDisplay="auto"
-          onChange={(e, newVal) => {
-            if (gameSettings.secondsPerRound !== newVal) {
-              setGameSettings({ ...gameSettings, secondsPerRound: newVal });
-            }
-          }}
+          onChange={(e, newVal) =>
+            setGameSettings({ ...gameSettings, secondsPerRound: newVal })
+          }
         />
 
         <p></p>
@@ -260,11 +253,9 @@ function HostView() {
           min={-4}
           max={0}
           valueLabelDisplay="auto"
-          onChange={(e, newVal) => {
-            if (gameSettings.buzzPenalty !== newVal) {
-              setGameSettings({ ...gameSettings, buzzPenalty: newVal });
-            }
-          }}
+          onChange={(e, newVal) =>
+            setGameSettings({ ...gameSettings, buzzPenalty: newVal })
+          }
         />
 
         <p></p>
@@ -276,11 +267,9 @@ function HostView() {
           min={-4}
           max={0}
           valueLabelDisplay="auto"
-          onChange={(e, newVal) => {
-            if (gameSettings.skipPenalty !== newVal) {
-              setGameSettings({ ...gameSettings, skipPenalty: newVal });
-            }
-          }}
+          onChange={(e, newVal) =>
+            setGameSettings({ ...gameSettings, skipPenalty: newVal })
+          }
         />
 
         <p></p>
@@ -292,11 +281,9 @@ function HostView() {
           min={1}
           max={4}
           valueLabelDisplay="auto"
-          onChange={(e, newVal) => {
-            if (gameSettings.correctReward !== newVal) {
-              setGameSettings({ ...gameSettings, correctReward: newVal });
-            }
-          }}
+          onChange={(e, newVal) =>
+            setGameSettings({ ...gameSettings, correctReward: newVal })
+          }
         />
       </div>
 
@@ -313,11 +300,11 @@ function HostView() {
         Add Team
       </Button>
 
-      {/* <TeamsContainer
+      <TeamsContainer
         dataForTeamsContainer={mockStatefulData}
         deleteTeam={deleteTeam}
         deletePlayer={deletePlayer}
-      ></TeamsContainer> */}
+      ></TeamsContainer>
 
       <Button
         style={{
