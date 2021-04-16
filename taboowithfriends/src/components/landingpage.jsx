@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from "react";
 import Button from "@material-ui/core/Button";
-import TextField from "@material-ui/core/TextField";
 import Grid from "@material-ui/core/Grid";
 import { createMuiTheme, MuiThemeProvider } from "@material-ui/core/styles";
-import { db } from "../constants";
-import { Link, useHistory, Redirect } from "react-router-dom";
-import HostView from "./HostView";
-import { generateID } from "../id";
-import { randomAnimal } from "../animal";
+import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
-import Alert from "@material-ui/lab/Alert";
-import IconButton from "@material-ui/core/IconButton";
-import CloseIcon from "@material-ui/icons/Close";
+import React, { useState } from "react";
+import { Redirect } from "react-router-dom";
+import { randomAnimal } from "../animal";
+import { db, defaultGameSettings } from "../constants";
+import { generateID } from "../id";
 
 const theme = createMuiTheme({
   palette: {
@@ -19,7 +15,6 @@ const theme = createMuiTheme({
       main: "#ffac12",
     },
   },
-
 });
 
 const newPlayerID = generateID();
@@ -34,19 +29,10 @@ function LandingPage() {
 
   const [roomAlert, setRoomAlert] = useState(false);
 
-
   const handleCreateSubmit = async (e) => {
     const gameRef = await db.collection("Games").doc(newRoomID);
     setNewRoomID(gameRef.id);
-    const gameSettings = {
-      gameMode: "turn",
-      turnLimit: 5,
-      scoreLimit: 21,
-      secondsPerRound: 90,
-      buzzPenalty: -2,
-      skipPenalty: -1,
-      correctReward: 2,
-    };
+    const gameSettings = defaultGameSettings;
     const teamSettings = {
       teams: [
         {
@@ -74,17 +60,14 @@ function LandingPage() {
     if (!doc.exists) {
       setRoomAlert(true);
     } else {
-      console.log(doc.data().teamSettings);
-      var updatedTeam = doc.data().teamSettings.teams;
+      const updatedTeam = doc.data().teamSettings.teams;
       updatedTeam[0].players.push({
         name: nameInput,
         isHost: false,
         id: newPlayerID,
       });
-      console.log(updatedTeam);
-      const teams = updatedTeam
-      await gameRef.update({teamSettings: {teams}})
-      setRedirectPlayer(true)
+      await gameRef.update({ teamSettings: { teams: updatedTeam } });
+      setRedirectPlayer(true);
     }
   };
 
@@ -122,7 +105,7 @@ function LandingPage() {
               style: { textAlign: "center", textTransform: "capitalize" },
             }}
             onChange={(e) => {
-              setNameInput(e.target.value);
+              setNameInput(e.target.value.toUpperCase());
             }}
             value={nameInput}
           />

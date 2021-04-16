@@ -26,7 +26,7 @@ function TeamCard({
             deletePlayer={deletePlayer}
             id={player.id}
             playerView={playerView}
-          ></PlayerChip>
+          />
         );
       })}
       <CardActions style={{ justifyContent: "center" }}>

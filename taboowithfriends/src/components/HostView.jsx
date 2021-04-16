@@ -38,99 +38,81 @@ const theme = createMuiTheme({
 });
 
 function HostView({ match, location }) {
-  const animals = [
-    "Hedgehog",
-    "Weasel",
-    "Mongoose",
-    "Muskrat",
-    "Ferrett",
-    "Otter",
-    "Shrew",
-    "Capybara",
-    "Red Panda",
-    "Porcupine",
-  ];
   const classes = useStyles();
-  const [gameID, setGameID] = useState( match.params.roomID);
+  const [gameID, setGameID] = useState(match.params.roomID);
   const [hostID, setHostID] = useState(match.params.playerID);
   const [gameSettings, setGameSettings] = useState({});
   const [teamSettings, setTeamSettings] = useState({});
+  const [oldTeamSettings, setOldTeamSettings] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-
-  const isFirstRun = useRef(true);
-
-  useEffect(async () => {
-    if (isFirstRun.current) {
-      const gameRef = await db.collection("Games").doc(gameID);
-      const myfoo = (await gameRef.get()).data();
-      setGameSettings(myfoo.gameSettings);
-      console.log(myfoo);
-      gameRef.onSnapshot((doc) => {
-        isFirstRun.current = false;
-        setTeamSettings(doc.data().teamSettings);
-
-        setIsLoading(false);
-      });
-      return;
-    }
-  }, []);
-
-  const prevGame = usePrevious(gameSettings);
-  const prevTeam = usePrevious(teamSettings);
+  const timeoutID = useRef(1);
 
   useEffect(() => {
-    if (!isFirstRun.current) {
-      if (
-        !isEqual(prevGame, gameSettings) ||
-        !isEqual(prevTeam, teamSettings)
-      ) {
-        console.log("Change!");
-        db.collection("Games")
-          .doc(gameID)
-          .set({ gameSettings }, { merge: true });
-        db.collection("Games")
-          .doc(gameID)
-          .set({ teamSettings }, { merge: true });
+    async function initDB() {
+      const gameRef = await db.collection("Games").doc(gameID);
+      const gameRefObj = await gameRef.get();
+      if (gameRefObj.exists) {
+        setGameSettings(gameRefObj.data().gameSettings);
+        setTeamSettings(gameRefObj.data().teamSettings);
+        setIsLoading(false);
+        return gameRef.onSnapshot((doc) => {
+          if (
+            teamSettings &&
+            Object.keys(teamSettings).length !== 0 &&
+            !isEqual(oldTeamSettings, teamSettings)
+          ) {
+            setOldTeamSettings(teamSettings);
+            setTeamSettings(doc.data().teamSettings);
+          }
+        });
       }
     }
-  }, [gameSettings, teamSettings]);
+    return initDB();
+  }, []);
 
-  function usePrevious(value) {
-    const ref = useRef();
-    useEffect(() => {
-      ref.current = value;
-    });
-    return ref.current;
-  }
+  useEffect(() => {
+    if (gameSettings && Object.keys(gameSettings).length !== 0) {
+      clearInterval(timeoutID.current); // read up on dis
+      timeoutID.current = setTimeout(
+        () =>
+          db
+            .collection("Games")
+            .doc(gameID)
+            .set({ gameSettings }, { merge: true }),
+        2000
+      );
+    }
+  }, [gameSettings]);
+
+  useEffect(() => {
+    if (
+      teamSettings &&
+      Object.keys(teamSettings).length !== 0 &&
+      !isEqual(oldTeamSettings, teamSettings)
+    ) {
+      db.collection("Games").doc(gameID).set({ teamSettings }, { merge: true });
+    }
+  }, [teamSettings]);
 
   function deleteTeam(teamToDelete) {
-    setTeamSettings((prevState) => {
-      if (prevState.teams.length > 2) {
-        if (!containsHost(teamToDelete)) {
-          return {
-            ...prevState,
-            teams: prevState.teams.filter((x) => x.id !== teamToDelete),
-          };
-        } else {
-          console.log("The host is on that team!");
-          return {
-            ...prevState,
-          };
-        }
+    if (teamSettings.teams.length > 2) {
+      if (!containsHost(teamToDelete)) {
+        setTeamSettings({
+          ...teamSettings,
+          teams: teamSettings.teams.filter((x) => x.id !== teamToDelete),
+        });
       } else {
-        console.log("There must be at least two teams!");
-        return {
-          ...prevState,
-        };
+        console.log("The host is on that team!");
       }
-    });
+    } else {
+      console.log("There must be at least two teams!");
+    }
   }
 
   function containsHost(teamID) {
-    for (var i = 0; i < teamSettings.teams.length; i++) {
+    for (let i = 0; i < teamSettings.teams.length; i++) {
       if (teamSettings.teams[i].id === teamID) {
-        console.log("players", teamSettings.teams[i].players);
-        for (var j = 0; j < teamSettings.teams[i].players.length; j++) {
+        for (let j = 0; j < teamSettings.teams[i].players.length; j++) {
           if (teamSettings.teams[i].players[j].isHost) {
             return true;
           }
@@ -144,38 +126,35 @@ function HostView({ match, location }) {
     setTeamSettings((prevState) => {
       return {
         ...prevState,
-        teams: prevState.teams.map((x) => ({
-          teamName: x.teamName,
-          id: x.id,
-          players: x.players.filter((y) => y.id !== playerToDelete),
+        teams: prevState.teams.map((team) => ({
+          teamName: team.teamName,
+          id: team.id,
+          players: team.players.filter(
+            (player) => player.id !== playerToDelete
+          ),
         })),
       };
     });
   }
 
   function addTeam() {
-    setTeamSettings((prevState) => {
-      if (prevState.teams.length < 10) {
-        return {
-          ...prevState,
-          teams: prevState.teams.concat({
-            teamName: randomAnimal(),
-            id: generateID(),
-            players: [
-              { name: "Sarah", isHost: false, id: generateID() },
-              { name: "Anne", isHost: false, id: generateID() },
-              { name: "Frank", isHost: false, id: generateID() },
-              { name: "Jack", isHost: false, id: generateID() },
-            ],
-          }),
-        };
-      } else {
-        console.log("You don't have that many friends! Stop adding teams...");
-        return {
-          ...prevState,
-        };
-      }
-    });
+    if (teamSettings.teams.length < 10) {
+      setTeamSettings({
+        ...teamSettings,
+        teams: teamSettings.teams.concat({
+          teamName: randomAnimal(),
+          id: generateID(),
+          players: [
+            { name: "Sarah", isHost: false, id: generateID() },
+            { name: "Anne", isHost: false, id: generateID() },
+            { name: "Frank", isHost: false, id: generateID() },
+            { name: "Jack", isHost: false, id: generateID() },
+          ],
+        }),
+      });
+    } else {
+      console.log("You don't have that many friends! Stop adding teams...");
+    }
   }
 
   if (isLoading) {
@@ -345,7 +324,7 @@ function HostView({ match, location }) {
         >
           Start Game!
         </Button>
-        <p></p>
+        <br />
       </MuiThemeProvider>
     );
 }

@@ -1,23 +1,14 @@
-import {
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
-} from "@material-ui/core";
 import Button from "@material-ui/core/Button";
-import Slider from "@material-ui/core/Slider";
 import {
   createMuiTheme,
   makeStyles,
   MuiThemeProvider,
 } from "@material-ui/core/styles";
-import Typography from "@material-ui/core/Typography";
-import React, { useEffect, useState } from "react";
-import TeamsContainer from "./TeamsContainer";
-import { db } from "../constants";
 import { isEqual } from "lodash";
-import { Link, useHistory, Redirect } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
+import { db } from "../constants";
+import TeamsContainer from "./TeamsContainer";
 
 // Styling that apparently can't be inline :( !
 const useStyles = makeStyles({
@@ -44,26 +35,8 @@ function PlayerView({ match, location }) {
   const playerID = parseInt(match.params.playerID, 10);
   const [isKicked, setIsKicked] = useState(false);
   const history = useHistory();
-  const [gameSettings, setGameSettings] = useState({
-    gameSettings: {
-      gameMode: "loading...",
-      turnLimit: "loading...",
-      scoreLimit: "loading...",
-      secondsPerRound: "loading...",
-      buzzPenalty: "loading...",
-      skipPenalty: "loading...",
-      correctReward: "loading...",
-    },
-  });
-  const [teamSettings, setTeamSettings] = useState({
-    teams: [
-      {
-        teamName: "",
-        id: "",
-        players: [{ name: "", id: "", isHost: false }],
-      },
-    ],
-  });
+  const [gameSettings, setGameSettings] = useState();
+  const [teamSettings, setTeamSettings] = useState();
 
   useEffect(() => {
     const initDB = db
@@ -78,32 +51,28 @@ function PlayerView({ match, location }) {
   }, []);
 
   function deleteTeam(teamToDelete) {
-    setTeamSettings((prevState) => {
-      if (prevState.teams.length > 2) {
-        const newTeam = {
-          ...prevState,
-          teams: prevState.teams.filter((x) => x.teamName !== teamToDelete),
-        };
-        db.collection("Games")
-          .doc(gameID)
-          .set({ teamSettings: newTeam }, { merge: true });
-        return newTeam;
-      } else {
-        console.log("There must be at least two teams!");
-        return {
-          ...prevState,
-        };
-      }
-    });
+    if (teamSettings.teams.length > 2) {
+      const newTeam = {
+        ...teamSettings,
+        teams: teamSettings.teams.filter((x) => x.teamName !== teamToDelete),
+      };
+      db.collection("Games")
+        .doc(gameID)
+        .set({ teamSettings: newTeam }, { merge: true });
+      setTeamSettings(newTeam);
+      return newTeam;
+    }
   }
 
   function deletePlayer(playerToDelete) {
     setTeamSettings((prevState) => {
       const newTeam = {
         ...prevState,
-        teams: prevState.teams.map((x) => ({
-          teamName: x.teamName,
-          players: x.players.filter((y) => y.id !== playerToDelete),
+        teams: prevState.teams.map((team) => ({
+          teamName: team.teamName,
+          players: team.players.filter(
+            (player) => player.id !== playerToDelete
+          ),
         })),
       };
       db.collection("Games")
@@ -117,25 +86,26 @@ function PlayerView({ match, location }) {
     const gameRef = await db.collection("Games").doc(gameID);
     const doc = await gameRef.get();
     const oldTeams = doc.data().teamSettings.teams;
-    var playerToSwitch = {};
-    var teams = {};
-
-    for (var i = 0; i < oldTeams.length; i++) {
-      for (var j = 0; j < oldTeams[i].players.length; j++) {
-        if (isEqual(oldTeams[i].players[j].id, playerID)) {
-          playerToSwitch = oldTeams[i].players[j];
-          oldTeams[i].players.splice(j, 1);
-          break;
+    let curPlayer;
+    const newTeams = oldTeams
+      .map((team) => {
+        const newPlayers = team.players.filter((player) => {
+          if (player.id === playerID) {
+            curPlayer = player;
+          }
+          return player.id !== playerID;
+        });
+        team.players = newPlayers;
+        return team;
+      })
+      .map((team) => {
+        if (team.id === newTeamID) {
+          team.players.push(curPlayer);
+          return team;
         }
-      }
-    }
-    for (var i = 0; i < oldTeams.length; i++) {
-      if (oldTeams[i].id === newTeamID) {
-        oldTeams[i].players.push(playerToSwitch);
-        teams = oldTeams;
-      }
-    }
-    await gameRef.update({ teamSettings: { teams } });
+        return team;
+      });
+    await gameRef.update({ teamSettings: { teams: newTeams } });
   }
 
   async function inTeam(playerID) {
@@ -143,8 +113,8 @@ function PlayerView({ match, location }) {
     const doc = await gameRef.get();
     const teams = doc.data().teamSettings.teams;
 
-    for (var i = 0; i < teams.length; i++) {
-      for (var j = 0; j < teams[i].players.length; j++) {
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = 0; j < teams[i].players.length; j++) {
         if (isEqual(teams[i].players[j].id, playerID)) {
           return true;
         }
@@ -232,8 +202,8 @@ function PlayerView({ match, location }) {
           deletePlayer={deletePlayer}
           playerView={true}
           joinTeam={joinTeam}
-        ></TeamsContainer>
-        <p></p>
+        />
+        <br />
       </MuiThemeProvider>
     );
 }
