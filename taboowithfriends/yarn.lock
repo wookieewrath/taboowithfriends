@@ -1200,15 +1200,57 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
+"@firebase/analytics-types@0.4.0":
+  version "0.4.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/analytics-types/-/analytics-types-0.4.0.tgz#d6716f9fa36a6e340bc0ecfe68af325aa6f60508"
+  integrity sha1-1nFvn6NqbjQLwOz+aK8yWqb2BQg=
+
+"@firebase/analytics@0.6.6":
+  version "0.6.6"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/analytics/-/analytics-0.6.6.tgz#b763cff2dffecbcfe12b5d7b3a34601574f97d6c"
+  integrity sha1-t2PP8t/+y8/hK117OjRgFXT5fWw=
+  dependencies:
+    "@firebase/analytics-types" "0.4.0"
+    "@firebase/component" "0.3.0"
+    "@firebase/installations" "0.4.22"
+    "@firebase/logger" "0.2.6"
+    "@firebase/util" "0.4.0"
+    tslib "^2.1.0"
+
 "@firebase/app-types@0.6.1":
   version "0.6.1"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/app-types/-/app-types-0.6.1.tgz#dcbd23030a71c0c74fc95d4a3f75ba81653850e9"
   integrity sha1-3L0jAwpxwMdPyV1KP3W6gWU4UOk=
 
+"@firebase/app@0.6.17":
+  version "0.6.17"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/app/-/app-0.6.17.tgz#866c963cb4051a0457f989285524072bbb1aacda"
+  integrity sha1-hmyWPLQFGgRX+YkoVSQHK7sarNo=
+  dependencies:
+    "@firebase/app-types" "0.6.1"
+    "@firebase/component" "0.3.0"
+    "@firebase/logger" "0.2.6"
+    "@firebase/util" "0.4.0"
+    dom-storage "2.1.0"
+    tslib "^2.1.0"
+    xmlhttprequest "1.8.0"
+
 "@firebase/auth-interop-types@0.1.5":
   version "0.1.5"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/auth-interop-types/-/auth-interop-types-0.1.5.tgz#9fc9bd7c879f16b8d1bb08373a0f48c3a8b74557"
   integrity sha1-n8m9fIefFrjRuwg3Og9Iw6i3RVc=
+
+"@firebase/auth-types@0.10.2":
+  version "0.10.2"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/auth-types/-/auth-types-0.10.2.tgz#3fad953380c447b7545122430a4c7a9bc8355001"
+  integrity sha1-P62VM4DER7dUUSJDCkx6m8g1UAE=
+
+"@firebase/auth@0.16.4":
+  version "0.16.4"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/auth/-/auth-0.16.4.tgz#6249d80f1e974b0db122930ae9fac885eccead5c"
+  integrity sha1-YknYDx6XSw2xIpMK6frIhezOrVw=
+  dependencies:
+    "@firebase/auth-types" "0.10.2"
 
 "@firebase/component@0.1.21":
   version "0.1.21"
@@ -1218,12 +1260,40 @@
     "@firebase/util" "0.3.4"
     tslib "^1.11.1"
 
+"@firebase/component@0.3.0":
+  version "0.3.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/component/-/component-0.3.0.tgz#dadc66bee67553091b11179cc75a2a19020af457"
+  integrity sha1-2txmvuZ1UwkbERecx1oqGQIK9Fc=
+  dependencies:
+    "@firebase/util" "0.4.0"
+    tslib "^2.1.0"
+
 "@firebase/database-types@0.6.1", "@firebase/database-types@^0.6.1":
   version "0.6.1"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/database-types/-/database-types-0.6.1.tgz#cf1cfc03e617ed4c2561703781f85ba4c707ff65"
   integrity sha1-zxz8A+YX7UwlYXA3gfhbpMcH/2U=
   dependencies:
     "@firebase/app-types" "0.6.1"
+
+"@firebase/database-types@0.7.0":
+  version "0.7.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/database-types/-/database-types-0.7.0.tgz#ab140d178ded676e60d8ade8c8f13de8e01e7e1e"
+  integrity sha1-qxQNF43tZ25g2K3oyPE96OAefh4=
+  dependencies:
+    "@firebase/app-types" "0.6.1"
+
+"@firebase/database@0.9.6":
+  version "0.9.6"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/database/-/database-0.9.6.tgz#b195112e677b9e0eed626485fb98198f5d1ae1b0"
+  integrity sha1-sZURLmd7ng7tYmSF+5gZj10a4bA=
+  dependencies:
+    "@firebase/auth-interop-types" "0.1.5"
+    "@firebase/component" "0.3.0"
+    "@firebase/database-types" "0.7.0"
+    "@firebase/logger" "0.2.6"
+    "@firebase/util" "0.4.0"
+    faye-websocket "0.11.3"
+    tslib "^2.1.0"
 
 "@firebase/database@^0.8.1":
   version "0.8.3"
@@ -1238,10 +1308,137 @@
     faye-websocket "0.11.3"
     tslib "^1.11.1"
 
+"@firebase/firestore-types@2.2.0":
+  version "2.2.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/firestore-types/-/firestore-types-2.2.0.tgz#9a3f3f2906232c3b4a726d988a6ef077f35f9093"
+  integrity sha1-mj8/KQYjLDtKcm2Yim7wd/NfkJM=
+
+"@firebase/firestore@2.2.1":
+  version "2.2.1"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/firestore/-/firestore-2.2.1.tgz#38396d244cc6c10fdf4c3a2f45f72eea9a473c83"
+  integrity sha1-ODltJEzGwQ/fTDovRfcu6ppHPIM=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/firestore-types" "2.2.0"
+    "@firebase/logger" "0.2.6"
+    "@firebase/util" "0.4.0"
+    "@firebase/webchannel-wrapper" "0.4.1"
+    "@grpc/grpc-js" "^1.0.0"
+    "@grpc/proto-loader" "^0.5.0"
+    node-fetch "2.6.1"
+    tslib "^2.1.0"
+
+"@firebase/functions-types@0.4.0":
+  version "0.4.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/functions-types/-/functions-types-0.4.0.tgz#0b789f4fe9a9c0b987606c4da10139345b40f6b9"
+  integrity sha1-C3ifT+mpwLmHYGxNoQE5NFtA9rk=
+
+"@firebase/functions@0.6.4":
+  version "0.6.4"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/functions/-/functions-0.6.4.tgz#a81ccb8dd6432d8189181d0b69ad1416407587b8"
+  integrity sha1-qBzLjdZDLYGJGB0Laa0UFkB1h7g=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/functions-types" "0.4.0"
+    "@firebase/messaging-types" "0.5.0"
+    node-fetch "2.6.1"
+    tslib "^2.1.0"
+
+"@firebase/installations-types@0.3.4":
+  version "0.3.4"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/installations-types/-/installations-types-0.3.4.tgz#589a941d713f4f64bf9f4feb7f463505bab1afa2"
+  integrity sha1-WJqUHXE/T2S/n0/rf0Y1Bbqxr6I=
+
+"@firebase/installations@0.4.22":
+  version "0.4.22"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/installations/-/installations-0.4.22.tgz#e91f78625eae4cc088c4e72112f2eefdb804cb0a"
+  integrity sha1-6R94Yl6uTMCIxOchEvLu/bgEywo=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/installations-types" "0.3.4"
+    "@firebase/util" "0.4.0"
+    idb "3.0.2"
+    tslib "^2.1.0"
+
 "@firebase/logger@0.2.6":
   version "0.2.6"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/logger/-/logger-0.2.6.tgz#3aa2ca4fe10327cabf7808bd3994e88db26d7989"
   integrity sha1-OqLKT+EDJ8q/eAi9OZTojbJteYk=
+
+"@firebase/messaging-types@0.5.0":
+  version "0.5.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/messaging-types/-/messaging-types-0.5.0.tgz#c5d0ef309ced1758fda93ef3ac70a786de2e73c4"
+  integrity sha1-xdDvMJztF1j9qT7zrHCnht4uc8Q=
+
+"@firebase/messaging@0.7.6":
+  version "0.7.6"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/messaging/-/messaging-0.7.6.tgz#73cd122e9154a29da9f2c8a038873c2d77c22245"
+  integrity sha1-c80SLpFUop2p8sigOIc8LXfCIkU=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/installations" "0.4.22"
+    "@firebase/messaging-types" "0.5.0"
+    "@firebase/util" "0.4.0"
+    idb "3.0.2"
+    tslib "^2.1.0"
+
+"@firebase/performance-types@0.0.13":
+  version "0.0.13"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/performance-types/-/performance-types-0.0.13.tgz#58ce5453f57e34b18186f74ef11550dfc558ede6"
+  integrity sha1-WM5UU/V+NLGBhvdO8RVQ38VY7eY=
+
+"@firebase/performance@0.4.8":
+  version "0.4.8"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/performance/-/performance-0.4.8.tgz#32585ddb68d001c0b63cc5f5caf6d8aa4df49ccd"
+  integrity sha1-Mlhd22jQAcC2PMX1yvbYqk30nM0=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/installations" "0.4.22"
+    "@firebase/logger" "0.2.6"
+    "@firebase/performance-types" "0.0.13"
+    "@firebase/util" "0.4.0"
+    tslib "^2.1.0"
+
+"@firebase/polyfill@0.3.36":
+  version "0.3.36"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/polyfill/-/polyfill-0.3.36.tgz#c057cce6748170f36966b555749472b25efdb145"
+  integrity sha1-wFfM5nSBcPNpZrVVdJRysl79sUU=
+  dependencies:
+    core-js "3.6.5"
+    promise-polyfill "8.1.3"
+    whatwg-fetch "2.0.4"
+
+"@firebase/remote-config-types@0.1.9":
+  version "0.1.9"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/remote-config-types/-/remote-config-types-0.1.9.tgz#fe6bbe4d08f3b6e92fce30e4b7a9f4d6a96d6965"
+  integrity sha1-/mu+TQjztukvzjDkt6n01qltaWU=
+
+"@firebase/remote-config@0.1.33":
+  version "0.1.33"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/remote-config/-/remote-config-0.1.33.tgz#3a1795dc08dda9edc6c62b5e624afd901c3a4d52"
+  integrity sha1-OheV3Ajdqe3GxiteYkr9kBw6TVI=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/installations" "0.4.22"
+    "@firebase/logger" "0.2.6"
+    "@firebase/remote-config-types" "0.1.9"
+    "@firebase/util" "0.4.0"
+    tslib "^2.1.0"
+
+"@firebase/storage-types@0.3.13":
+  version "0.3.13"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/storage-types/-/storage-types-0.3.13.tgz#cd43e939a2ab5742e109eb639a313673a48b5458"
+  integrity sha1-zUPpOaKrV0LhCetjmjE2c6SLVFg=
+
+"@firebase/storage@0.4.5":
+  version "0.4.5"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/storage/-/storage-0.4.5.tgz#8b74f4e40c14ad6c11873d2e93a76eca103632b9"
+  integrity sha1-i3T05AwUrWwRhz0uk6duyhA2Mrk=
+  dependencies:
+    "@firebase/component" "0.3.0"
+    "@firebase/storage-types" "0.3.13"
+    "@firebase/util" "0.4.0"
+    tslib "^2.1.0"
 
 "@firebase/util@0.3.4":
   version "0.3.4"
@@ -1249,6 +1446,18 @@
   integrity sha1-44nQ4OKqyIpSNbBrqUMduZnUiSs=
   dependencies:
     tslib "^1.11.1"
+
+"@firebase/util@0.4.0":
+  version "0.4.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/util/-/util-0.4.0.tgz#8db3d39e0ed7b991b4da2435d7e6556cb1bd6672"
+  integrity sha1-jbPTng7XuZG02iQ11+ZVbLG9ZnI=
+  dependencies:
+    tslib "^2.0.0"
+
+"@firebase/webchannel-wrapper@0.4.1":
+  version "0.4.1"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@firebase/webchannel-wrapper/-/webchannel-wrapper-0.4.1.tgz#600f2275ff54739ad5ac0102f1467b8963cd5f71"
+  integrity sha1-YA8idf9Uc5rVrAEC8UZ7iWPNX3E=
 
 "@google-cloud/common@^3.6.0":
   version "3.6.0"
@@ -1346,6 +1555,15 @@
     stream-events "^1.0.1"
     xdg-basedir "^4.0.0"
 
+"@grpc/grpc-js@^1.0.0":
+  version "1.2.12"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@grpc/grpc-js/-/grpc-js-1.2.12.tgz#0153f27512acf69184bb52c0a1035ca91d6c14b0"
+  integrity sha1-AVPydRKs9pGEu1LAoQNcqR1sFLA=
+  dependencies:
+    "@types/node" ">=12.12.47"
+    google-auth-library "^6.1.1"
+    semver "^6.2.0"
+
 "@grpc/grpc-js@~1.2.0":
   version "1.2.11"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@grpc/grpc-js/-/grpc-js-1.2.11.tgz#68faa56bded64844294dc6429185503376f05ff1"
@@ -1355,7 +1573,7 @@
     google-auth-library "^6.1.1"
     semver "^6.2.0"
 
-"@grpc/proto-loader@^0.5.1":
+"@grpc/proto-loader@^0.5.0", "@grpc/proto-loader@^0.5.1":
   version "0.5.6"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/@grpc/proto-loader/-/proto-loader-0.5.6.tgz#1dea4b8a6412b05e2d58514d507137b63a52a98d"
   integrity sha1-HepLimQSsF4tWFFNUHE3tjpSqY0=
@@ -4375,6 +4593,11 @@ core-js-pure@^3.0.0:
   resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.9.0.tgz#326cc74e1fef8b7443a6a793ddb0adfcd81f9efb"
   integrity sha512-3pEcmMZC9Cq0D4ZBh3pe2HLtqxpGNJBLXF/kZ2YzK17RbKp94w0HFbdbSx8H8kAlZG5k76hvLrkPm57Uyef+kg==
 
+core-js@3.6.5:
+  version "3.6.5"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/core-js/-/core-js-3.6.5.tgz#7395dc273af37fb2e50e9bd3d9fe841285231d1a"
+  integrity sha1-c5XcJzrzf7LlDpvT2f6EEoUjHRo=
+
 core-js@^2.4.0:
   version "2.6.12"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
@@ -5111,6 +5334,11 @@ dom-serializer@0:
   dependencies:
     domelementtype "^2.0.1"
     entities "^2.0.0"
+
+dom-storage@2.1.0:
+  version "2.1.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/dom-storage/-/dom-storage-2.1.0.tgz#00fb868bc9201357ea243c7bcfd3304c1e34ea39"
+  integrity sha1-APuGi8kgE1fqJDx7z9MwTB406jk=
 
 domain-browser@^1.1.1:
   version "1.2.0"
@@ -6229,6 +6457,26 @@ firebase-tools@^9.6.1:
     winston "^3.0.0"
     ws "^7.2.3"
 
+firebase@^8.3.1:
+  version "8.3.1"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/firebase/-/firebase-8.3.1.tgz#7d08ca04feade96270345c6e9475d4055c93e97d"
+  integrity sha1-fQjKBP6t6WJwNFxulHXUBVyT6X0=
+  dependencies:
+    "@firebase/analytics" "0.6.6"
+    "@firebase/app" "0.6.17"
+    "@firebase/app-types" "0.6.1"
+    "@firebase/auth" "0.16.4"
+    "@firebase/database" "0.9.6"
+    "@firebase/firestore" "2.2.1"
+    "@firebase/functions" "0.6.4"
+    "@firebase/installations" "0.4.22"
+    "@firebase/messaging" "0.7.6"
+    "@firebase/performance" "0.4.8"
+    "@firebase/polyfill" "0.3.36"
+    "@firebase/remote-config" "0.1.33"
+    "@firebase/storage" "0.4.5"
+    "@firebase/util" "0.4.0"
+
 flat-arguments@^1.0.0:
   version "1.0.2"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/flat-arguments/-/flat-arguments-1.0.2.tgz#9baa780adf0501f282d726c9c6a038dba44ea76f"
@@ -7135,6 +7383,11 @@ icss-utils@^4.0.0, icss-utils@^4.1.1:
   integrity sha512-4aFq7wvWyMHKgxsH8QQtGpvbASCf+eM3wPRLI6R+MgAnTCZ6STYsRvttLvRWK0Nfif5piF394St3HeJDaljGPA==
   dependencies:
     postcss "^7.0.14"
+
+idb@3.0.2:
+  version "3.0.2"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/idb/-/idb-3.0.2.tgz#c8e9122d5ddd40f13b60ae665e4862f8b13fa384"
+  integrity sha1-yOkSLV3dQPE7YK5mXkhi+LE/o4Q=
 
 identity-obj-proxy@3.0.0:
   version "3.0.0"
@@ -9471,7 +9724,7 @@ node-emoji@^1.4.1:
   dependencies:
     lodash.toarray "^4.4.0"
 
-node-fetch@^2.3.0, node-fetch@^2.6.1:
+node-fetch@2.6.1, node-fetch@^2.3.0, node-fetch@^2.6.1:
   version "2.6.1"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
   integrity sha1-BFvTI2Mfdu0uK1VXM5RBa2OaAFI=
@@ -11029,6 +11282,11 @@ promise-inflight@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/promise-inflight/-/promise-inflight-1.0.1.tgz#98472870bf228132fcbdd868129bad12c3c029e3"
   integrity sha1-mEcocL8igTL8vdhoEputEsPAKeM=
+
+promise-polyfill@8.1.3:
+  version "8.1.3"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/promise-polyfill/-/promise-polyfill-8.1.3.tgz#8c99b3cf53f3a91c68226ffde7bde81d7f904116"
+  integrity sha1-jJmzz1PzqRxoIm/9573oHX+QQRY=
 
 promise@^8.1.0:
   version "8.1.0"
@@ -13304,7 +13562,7 @@ tslib@^1.11.1, tslib@^1.8.1, tslib@^1.9.0:
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/tslib/-/tslib-1.14.1.tgz#cf2d38bdc34a134bcaf1091c41f6619e2f672d00"
   integrity sha1-zy04vcNKE0vK8QkcQfZhni9nLQA=
 
-tslib@^2.0.0, tslib@^2.0.1, tslib@^2.0.3:
+tslib@^2.0.0, tslib@^2.0.1, tslib@^2.0.3, tslib@^2.1.0:
   version "2.1.0"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/tslib/-/tslib-2.1.0.tgz#da60860f1c2ecaa5703ab7d39bc05b6bf988b97a"
   integrity sha1-2mCGDxwuyqVwOrfTm8Bba/mIuXo=
@@ -13919,6 +14177,11 @@ whatwg-encoding@^1.0.5:
   dependencies:
     iconv-lite "0.4.24"
 
+whatwg-fetch@2.0.4:
+  version "2.0.4"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/whatwg-fetch/-/whatwg-fetch-2.0.4.tgz#dde6a5df315f9d39991aa17621853d720b85566f"
+  integrity sha1-3eal3zFfnTmZGqF2IYU9cguFVm8=
+
 whatwg-fetch@^3.4.1:
   version "3.6.1"
   resolved "https://registry.yarnpkg.com/whatwg-fetch/-/whatwg-fetch-3.6.1.tgz#93bc4005af6c2cc30ba3e42ec3125947c8f54ed3"
@@ -14235,6 +14498,11 @@ xmldom@0.1.x:
   version "0.1.31"
   resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/xmldom/-/xmldom-0.1.31.tgz#b76c9a1bd9f0a9737e5a72dc37231cf38375e2ff"
   integrity sha1-t2yaG9nwqXN+WnLcNyMc84N14v8=
+
+xmlhttprequest@1.8.0:
+  version "1.8.0"
+  resolved "https://artifactory.workday.com/artifactory/api/npm/npm-virtual/xmlhttprequest/-/xmlhttprequest-1.8.0.tgz#67fe075c5c24fef39f9d65f5f7b7fe75171968fc"
+  integrity sha1-Z/4HXFwk/vOfnWX197f+dRcZaPw=
 
 xregexp@2.0.0:
   version "2.0.0"

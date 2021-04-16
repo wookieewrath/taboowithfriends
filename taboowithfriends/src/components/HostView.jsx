@@ -69,26 +69,24 @@ const mockData = {
   ],
 };
 
-
 const useStyles = makeStyles({
-    root: {
-      width: 300,
-    },
-    input: {
-      width: 45,
-    },
-  });
+  root: {
+    width: 300,
+  },
+  input: {
+    width: 45,
+  },
+});
 
-  const theme = createMuiTheme({
-    palette: {
-      primary: {
-        main: "#ffac12",
-      },
+const theme = createMuiTheme({
+  palette: {
+    primary: {
+      main: "#ffac12",
     },
-  });
+  },
+});
 
 function HostView() {
-
   const classes = useStyles();
 
   const [gameSettings, setGameSettings] = useState({
@@ -133,35 +131,32 @@ function HostView() {
     });
   }
 
-  function addTeam(){
+  function addTeam() {
     setMockStatefulData((prevState) => {
-        if (prevState.someLargeTeamIdentifier.length < 10) {
-            return {
-              ...prevState,
-              someLargeTeamIdentifier: prevState.someLargeTeamIdentifier.concat(
-                {
-                    teamName: "Weasel",
-                    players: [
-                      { name: "Sarah", isHost: false },
-                      { name: "Anne", isHost: false },
-                      { name: "Frank", isHost: false },
-                      { name: "Jack", isHost: false },
-                    ]
-                }
-              )
-            };
-            
-          } else {
-            console.log("You don't have that many friends! Stop adding teams...");
-            return {
-              ...prevState,
-            };
-          }
-    })
+      if (prevState.someLargeTeamIdentifier.length < 10) {
+        return {
+          ...prevState,
+          someLargeTeamIdentifier: prevState.someLargeTeamIdentifier.concat({
+            teamName: "Weasel",
+            players: [
+              { name: "Sarah", isHost: false },
+              { name: "Anne", isHost: false },
+              { name: "Frank", isHost: false },
+              { name: "Jack", isHost: false },
+            ],
+          }),
+        };
+      } else {
+        console.log("You don't have that many friends! Stop adding teams...");
+        return {
+          ...prevState,
+        };
+      }
+    });
   }
 
   useEffect(() => {
-    console.log(mockStatefulData)
+    console.log(mockStatefulData);
     console.log("A change happend :o !");
   }, [mockStatefulData]);
 
