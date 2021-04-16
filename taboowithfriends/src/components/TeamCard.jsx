@@ -12,7 +12,7 @@ function TeamCard({
   deleteTeam,
   deletePlayer,
   playerView,
-  joinTeam
+  joinTeam,
 }) {
   return (
     <Card style={{ maxWidth: "100vw", minHeight: 50, padding: 15, margin: 5 }}>
@@ -31,7 +31,13 @@ function TeamCard({
       })}
       <CardActions style={{ justifyContent: "center" }}>
         {playerView ? (
-          <Button size="small" color="primary" onClick={()=>{joinTeam(teamID)}}>
+          <Button
+            size="small"
+            color="primary"
+            onClick={() => {
+              joinTeam(teamID);
+            }}
+          >
             Join Team
           </Button>
         ) : teamList.length === 0 ? (
