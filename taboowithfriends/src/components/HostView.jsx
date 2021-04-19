@@ -1,17 +1,7 @@
-import {
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
-} from "@material-ui/core";
+import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } from "@material-ui/core";
 import Button from "@material-ui/core/Button";
 import Slider from "@material-ui/core/Slider";
-import {
-  createMuiTheme,
-  makeStyles,
-  MuiThemeProvider,
-} from "@material-ui/core/styles";
+import { createMuiTheme, makeStyles, MuiThemeProvider } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React, { useEffect, useState, useRef } from "react";
 import TeamsContainer from "./TeamsContainer";
@@ -54,17 +44,14 @@ function HostView({ match, location }) {
       if (gameRefObj.exists) {
         setGameSettings(gameRefObj.data().gameSettings);
         setTeamSettings(gameRefObj.data().teamSettings);
+        setOldTeamSettings(gameRefObj.data().teamSettings);
         setIsLoading(false);
         return gameRef.onSnapshot((doc) => {
-          if (
-            teamSettings &&
-            Object.keys(teamSettings).length !== 0 &&
-            !isEqual(oldTeamSettings, teamSettings)
-          ) {
-            setOldTeamSettings(teamSettings);
-            setTeamSettings(doc.data().teamSettings);
-          }
+          setOldTeamSettings(teamSettings);
+          setTeamSettings(doc.data().teamSettings);
         });
+      } else {
+        console.log("gameRefObj doesn't exist!");
       }
     }
     return initDB();
@@ -74,22 +61,14 @@ function HostView({ match, location }) {
     if (gameSettings && Object.keys(gameSettings).length !== 0) {
       clearInterval(timeoutID.current); // read up on dis
       timeoutID.current = setTimeout(
-        () =>
-          db
-            .collection("Games")
-            .doc(gameID)
-            .set({ gameSettings }, { merge: true }),
+        () => db.collection("Games").doc(gameID).set({ gameSettings }, { merge: true }),
         2000
       );
     }
   }, [gameSettings]);
 
   useEffect(() => {
-    if (
-      teamSettings &&
-      Object.keys(teamSettings).length !== 0 &&
-      !isEqual(oldTeamSettings, teamSettings)
-    ) {
+    if (teamSettings && Object.keys(teamSettings).length !== 0 && !isEqual(oldTeamSettings, teamSettings)) {
       db.collection("Games").doc(gameID).set({ teamSettings }, { merge: true });
     }
   }, [teamSettings]);
@@ -129,9 +108,7 @@ function HostView({ match, location }) {
         teams: prevState.teams.map((team) => ({
           teamName: team.teamName,
           id: team.id,
-          players: team.players.filter(
-            (player) => player.id !== playerToDelete
-          ),
+          players: team.players.filter((player) => player.id !== playerToDelete),
         })),
       };
     });
@@ -182,16 +159,8 @@ function HostView({ match, location }) {
                 }
               }}
             >
-              <FormControlLabel
-                value="turn"
-                control={<Radio />}
-                label="Turn Limit"
-              />
-              <FormControlLabel
-                value="score"
-                control={<Radio />}
-                label="Score Limit"
-              />
+              <FormControlLabel value="turn" control={<Radio />} label="Turn Limit" />
+              <FormControlLabel value="score" control={<Radio />} label="Score Limit" />
             </RadioGroup>
           </FormControl>
 
