@@ -4,11 +4,12 @@ import {
   makeStyles,
   MuiThemeProvider,
 } from "@material-ui/core/styles";
-import { isEqual } from "lodash";
-import React, { useEffect, useState } from "react";
+import { isEqual, isNull, isUndefined, set } from "lodash";
+import React, { useEffect, useState, useRef } from "react";
 import { useHistory } from "react-router-dom";
 import { db } from "../constants";
 import TeamsContainer from "./TeamsContainer";
+import { Redirect } from "react-router-dom";
 
 // Styling that apparently can't be inline :( !
 const useStyles = makeStyles({
@@ -29,19 +30,20 @@ const theme = createMuiTheme({
 
 function PlayerView({ match, location }) {
   const classes = useStyles();
-  const [gameID, setGameID] = useState(match.params.roomID);
+  const [lobbyID, setLobbyID] = useState(sessionStorage.getItem("lobbyID"));
+  const [gameID, setGameID] = useState(sessionStorage.getItem("gameID"));
   const [isLoading, setIsLoading] = useState(true);
-  const playerName = location.state.playerName;
-  const playerID = parseInt(match.params.playerID, 10);
+  const playerID = parseInt(sessionStorage.getItem("playerID"), 10);
   const [isKicked, setIsKicked] = useState(false);
   const history = useHistory();
   const [gameSettings, setGameSettings] = useState();
   const [teamSettings, setTeamSettings] = useState();
-
+  const [isPlaying, setIsPlaying] = useState(false);
+  const timeoutID = useRef(1);
   useEffect(() => {
     const initDB = db
-      .collection("Games")
-      .doc(gameID)
+      .collection("Lobbies")
+      .doc(lobbyID)
       .onSnapshot((doc) => {
         setGameSettings(doc.data().gameSettings);
         setTeamSettings(doc.data().teamSettings);
@@ -50,14 +52,26 @@ function PlayerView({ match, location }) {
     return initDB;
   }, []);
 
+  useEffect(() => {
+    const playingSnapshot = db
+      .collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID)
+      .onSnapshot((doc) => {
+        setIsPlaying(doc.data().playing);
+      });
+    return playingSnapshot;
+  }, []);
+
   function deleteTeam(teamToDelete) {
     if (teamSettings.teams.length > 2) {
       const newTeam = {
         ...teamSettings,
         teams: teamSettings.teams.filter((x) => x.teamName !== teamToDelete),
       };
-      db.collection("Games")
-        .doc(gameID)
+      db.collection("Lobbies")
+        .doc(lobbyID)
         .set({ teamSettings: newTeam }, { merge: true });
       setTeamSettings(newTeam);
       return newTeam;
@@ -75,18 +89,37 @@ function PlayerView({ match, location }) {
           ),
         })),
       };
-      db.collection("Games")
-        .doc(gameID)
+      db.collection("Lobbies")
+        .doc(lobbyID)
         .set({ teamSettings: newTeam }, { merge: true });
       return newTeam;
     });
   }
 
   async function joinTeam(newTeamID) {
-    const gameRef = await db.collection("Games").doc(gameID);
-    const doc = await gameRef.get();
+    const lobbyRef = await db.collection("Lobbies").doc(lobbyID);
+    const doc = await lobbyRef.get();
     const oldTeams = doc.data().teamSettings.teams;
     let curPlayer;
+
+    let curPlayerTeamIndex = oldTeams.findIndex(
+      (team) =>
+        team.players.filter((player) => player.id === playerID).length > 0
+    );
+    let newPlayerTeamIndex = oldTeams.findIndex(
+      (team) => team.id === newTeamID
+    );
+    //console.log("current", curPlayerTeamIndex);
+    //console.log("new", newPlayerTeamIndex);
+
+    db.collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID)
+      .update({
+        wordsUsed: firebase.firestore.FieldValue.arrayUnion(randomInt),
+      });
+
     const newTeams = oldTeams
       .map((team) => {
         const newPlayers = team.players.filter((player) => {
@@ -105,18 +138,19 @@ function PlayerView({ match, location }) {
         }
         return team;
       });
-    await gameRef.update({ teamSettings: { teams: newTeams } });
+
+    await lobbyRef.update({ teamSettings: { teams: newTeams } });
   }
 
   async function inTeam(playerID) {
-    const gameRef = await db.collection("Games").doc(gameID);
-    const doc = await gameRef.get();
+    const lobbyRef = await db.collection("Lobbies").doc(lobbyID);
+    const doc = await lobbyRef.get();
     const teams = doc.data().teamSettings.teams;
 
     for (let i = 0; i < teams.length; i++) {
       for (let j = 0; j < teams[i].players.length; j++) {
         if (isEqual(teams[i].players[j].id, playerID)) {
-          return true;
+          return teams[i].id;
         }
       }
     }
@@ -125,7 +159,14 @@ function PlayerView({ match, location }) {
   }
 
   useEffect(() => {
-    inTeam(playerID);
+    if (
+      !isUndefined(gameSettings) &&
+      !isUndefined(teamSettings) &&
+      !isNull(gameSettings) &&
+      !isNull(teamSettings)
+    ) {
+      inTeam(playerID);
+    }
   }, [gameSettings, teamSettings]);
 
   if (isLoading) {
@@ -151,12 +192,23 @@ function PlayerView({ match, location }) {
         </Button>
       </div>
     );
+  } else if (isPlaying === "game") {
+    sessionStorage.setItem("playerID", playerID);
+    sessionStorage.setItem("lobbyID", lobbyID);
+    sessionStorage.setItem("gameID", gameID);
+    return (
+      <Redirect
+        to={{
+          pathname: `/game`,
+        }}
+      />
+    );
   } else
     return (
       <MuiThemeProvider theme={theme}>
         <p></p>
         <div>You are currently in Room:</div>
-        <div>{gameID}</div>
+        <div>{lobbyID}</div>
         <div className={classes.root}>
           <h6>
             Game Mode:{" "}

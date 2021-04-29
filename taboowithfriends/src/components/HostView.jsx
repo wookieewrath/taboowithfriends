@@ -1,7 +1,17 @@
-import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } from "@material-ui/core";
+import {
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
+} from "@material-ui/core";
 import Button from "@material-ui/core/Button";
 import Slider from "@material-ui/core/Slider";
-import { createMuiTheme, makeStyles, MuiThemeProvider } from "@material-ui/core/styles";
+import {
+  createMuiTheme,
+  makeStyles,
+  MuiThemeProvider,
+} from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React, { useEffect, useState, useRef } from "react";
 import TeamsContainer from "./TeamsContainer";
@@ -9,6 +19,7 @@ import { db } from "../constants";
 import { generateID } from "../id";
 import { isEqual } from "lodash";
 import { randomAnimal } from "../animal";
+import { Redirect } from "react-router-dom";
 
 // Styling that apparently can't be inline :( !
 const useStyles = makeStyles({
@@ -29,47 +40,76 @@ const theme = createMuiTheme({
 
 function HostView({ match, location }) {
   const classes = useStyles();
-  const [gameID, setGameID] = useState(match.params.roomID);
-  const [hostID, setHostID] = useState(match.params.playerID);
+  const [lobbyID, setLobbyID] = useState(sessionStorage.getItem("lobbyID"));
+  const [gameID, setGameID] = useState(sessionStorage.getItem("gameID"));
+  const [hostID, setHostID] = useState(sessionStorage.getItem("playerID"));
+  const [isPlaying, setIsPlaying] = useState(false);
   const [gameSettings, setGameSettings] = useState({});
   const [teamSettings, setTeamSettings] = useState({});
   const [oldTeamSettings, setOldTeamSettings] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const timeoutID = useRef(1);
+  const [wordPackLength, setWordPackLength] = useState(0);
 
   useEffect(() => {
     async function initDB() {
-      const gameRef = await db.collection("Games").doc(gameID);
-      const gameRefObj = await gameRef.get();
-      if (gameRefObj.exists) {
-        setGameSettings(gameRefObj.data().gameSettings);
-        setTeamSettings(gameRefObj.data().teamSettings);
-        setOldTeamSettings(gameRefObj.data().teamSettings);
+      const lobbyRef = await db.collection("Lobbies").doc(lobbyID);
+      const lobbyRefObj = await lobbyRef.get();
+      if (lobbyRefObj.exists) {
+        setGameSettings(lobbyRefObj.data().gameSettings);
+        setTeamSettings(lobbyRefObj.data().teamSettings);
+        setOldTeamSettings(lobbyRefObj.data().teamSettings);
         setIsLoading(false);
-        return gameRef.onSnapshot((doc) => {
-          setOldTeamSettings(teamSettings);
-          setTeamSettings(doc.data().teamSettings);
+        return lobbyRef.onSnapshot((doc) => {
+          //setOldTeamSettings(teamSettings);
+          //setTeamSettings(doc.data().teamSettings);
+          setTeamSettings((prevTS) => {
+            setOldTeamSettings(prevTS);
+            return doc.data().teamSettings;
+          });
         });
       } else {
-        console.log("gameRefObj doesn't exist!");
+        console.log("lobbyRefObj doesn't exist!");
       }
     }
     return initDB();
   }, []);
 
   useEffect(() => {
+    const playingSnapshot = db
+      .collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID)
+      .onSnapshot((doc) => {
+        setIsPlaying(doc.data().playing);
+      });
+    return playingSnapshot;
+  }, []);
+
+  useEffect(() => {
     if (gameSettings && Object.keys(gameSettings).length !== 0) {
       clearInterval(timeoutID.current); // read up on dis
       timeoutID.current = setTimeout(
-        () => db.collection("Games").doc(gameID).set({ gameSettings }, { merge: true }),
+        () =>
+          db
+            .collection("Lobbies")
+            .doc(lobbyID)
+            .set({ gameSettings }, { merge: true }),
         2000
       );
     }
   }, [gameSettings]);
 
   useEffect(() => {
-    if (teamSettings && Object.keys(teamSettings).length !== 0 && !isEqual(oldTeamSettings, teamSettings)) {
-      db.collection("Games").doc(gameID).set({ teamSettings }, { merge: true });
+    if (
+      teamSettings &&
+      Object.keys(teamSettings).length !== 0 &&
+      !isEqual(oldTeamSettings, teamSettings)
+    ) {
+      db.collection("Lobbies")
+        .doc(lobbyID)
+        .set({ teamSettings }, { merge: true });
     }
   }, [teamSettings]);
 
@@ -108,7 +148,9 @@ function HostView({ match, location }) {
         teams: prevState.teams.map((team) => ({
           teamName: team.teamName,
           id: team.id,
-          players: team.players.filter((player) => player.id !== playerToDelete),
+          players: team.players.filter(
+            (player) => player.id !== playerToDelete
+          ),
         })),
       };
     });
@@ -122,10 +164,10 @@ function HostView({ match, location }) {
           teamName: randomAnimal(),
           id: generateID(),
           players: [
-            { name: "Sarah", isHost: false, id: generateID() },
-            { name: "Anne", isHost: false, id: generateID() },
-            { name: "Frank", isHost: false, id: generateID() },
-            { name: "Jack", isHost: false, id: generateID() },
+            // { name: "Sarah", isHost: false, id: generateID() },
+            // { name: "Anne", isHost: false, id: generateID() },
+            // { name: "Frank", isHost: false, id: generateID() },
+            // { name: "Jack", isHost: false, id: generateID() },
           ],
         }),
       });
@@ -134,14 +176,81 @@ function HostView({ match, location }) {
     }
   }
 
+  function checkTeamsValid() {
+    return (
+      teamSettings.teams.length > 1 &&
+      !teamSettings.teams.filter((team) => team.players.length < 2).length
+    );
+  }
+
+  async function startGame() {
+    const gameRef = await db
+      .collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID);
+    const teamsForGame = teamSettings.teams.map((team) => ({
+      ...team,
+      describerIndex: 0,
+      score: 0,
+    }));
+    const wordsRef = await db.collection("Words").doc("WordPack");
+    const wordsDoc = await wordsRef.get();
+    let randomInt = await Math.floor(Math.random() * 2993); // TODO: Fix this hardcoded value....
+    let randomWord = await wordsDoc.data().wordsArray[randomInt];
+    await gameRef.set(
+      {
+        gameMode: gameSettings.gameMode,
+        turnLimit: gameSettings.turnLimit,
+        scoreLimit: gameSettings.scoreLimit,
+        secondsPerRound: gameSettings.secondsPerRound,
+        buzzPenalty: gameSettings.buzzPenalty,
+        skipPenalty: gameSettings.skipPenalty,
+        correctReward: gameSettings.correctReward,
+        teams: teamsForGame,
+        activeTeam: 0,
+        inRound: false,
+        roundNumber: 1,
+        wordsUsed: [],
+        currentWord: {
+          _id: randomWord._id,
+          badwords: randomWord.badwords,
+          title: randomWord.title,
+        },
+        gameOver: false,
+        roundEndTime: -1,
+      },
+      { merge: true }
+    );
+    await db
+      .collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID)
+      .update({
+        playing: "game",
+      });
+  }
+
   if (isLoading) {
     return <h1>Loading...</h1>;
+  } else if (isPlaying === "game") {
+    sessionStorage.setItem("playerID", hostID);
+    sessionStorage.setItem("lobbyID", lobbyID);
+    sessionStorage.setItem("gameID", gameID);
+    return (
+      <Redirect
+        to={{
+          pathname: `/game`,
+        }}
+      />
+    );
   } else
     return (
       <MuiThemeProvider theme={theme}>
         <p></p>
         <div>Your Room ID:</div>
-        <div>{gameID}</div>
+        <div>{lobbyID}</div>
         <p></p>
         <div className={classes.root}>
           <FormControl component="fieldset">
@@ -159,8 +268,16 @@ function HostView({ match, location }) {
                 }
               }}
             >
-              <FormControlLabel value="turn" control={<Radio />} label="Turn Limit" />
-              <FormControlLabel value="score" control={<Radio />} label="Score Limit" />
+              <FormControlLabel
+                value="turn"
+                control={<Radio />}
+                label="Turn Limit"
+              />
+              <FormControlLabel
+                value="score"
+                control={<Radio />}
+                label="Score Limit"
+              />
             </RadioGroup>
           </FormControl>
 
@@ -290,6 +407,8 @@ function HostView({ match, location }) {
             fontWeight: "bold",
             margin: 15,
           }}
+          disabled={!checkTeamsValid()}
+          onClick={startGame}
         >
           Start Game!
         </Button>

@@ -8,6 +8,12 @@ import { Redirect } from "react-router-dom";
 import { randomAnimal } from "../animal";
 import { db, defaultGameSettings } from "../constants";
 import { generateID } from "../id";
+import FavoriteIcon from "@material-ui/icons/Favorite";
+import GitHubIcon from "@material-ui/icons/GitHub";
+import MailIcon from "@material-ui/icons/Mail";
+import HelpIcon from "@material-ui/icons/Help";
+import IconButton from "@material-ui/core/IconButton";
+import Acknowledgements from "./Acknowledgements";
 
 const theme = createMuiTheme({
   palette: {
@@ -23,24 +29,27 @@ function LandingPage() {
   const [nameInput, setNameInput] = useState("");
   const [newRoomID, setNewRoomID] = useState("");
   const [existingRoomID, setExistingRoomID] = useState("");
-
+  const [newGameID, setNewGameID] = useState("");
   const [redirectHost, setRedirectHost] = useState(false);
   const [redirectPlayer, setRedirectPlayer] = useState(false);
-
   const [roomAlert, setRoomAlert] = useState(false);
+  const [openAcknowledgements, setOpenAcknowledgements] = useState(false);
+  const [disabledStart, setDisabledStart] = useState(false);
 
   const handleCreateSubmit = async (e) => {
-    const gameRef = await db.collection("Games").doc(newRoomID);
-    setNewRoomID(gameRef.id);
+    setDisabledStart(true);
+    const lobbyRef = await db.collection("Lobbies").doc(newRoomID);
+    setNewRoomID(lobbyRef.id);
+    const gameRef = await db.collection("Lobbies").doc(newRoomID).collection("Games").add({ playing: "lobby" });
+    setNewGameID(gameRef.id);
+    console.log(gameRef);
     const gameSettings = defaultGameSettings;
     const teamSettings = {
       teams: [
         {
           teamName: randomAnimal(),
           id: generateID(),
-          players: [
-            { name: `${nameInput} (Host)`, isHost: true, id: newPlayerID },
-          ],
+          players: [{ name: nameInput, isHost: true, id: newPlayerID }],
         },
         {
           teamName: randomAnimal(),
@@ -49,14 +58,23 @@ function LandingPage() {
         },
       ],
     };
-    await gameRef.set({ gameSettings }, { merge: true });
-    await gameRef.set({ teamSettings }, { merge: true });
+    await lobbyRef.set({ gameSettings }, { merge: true });
+    await lobbyRef.set({ teamSettings }, { merge: true });
     setRedirectHost(true);
   };
 
   const handleJoinSubmit = async (e) => {
-    const gameRef = await db.collection("Games").doc(existingRoomID);
-    const doc = await gameRef.get();
+    setDisabledStart(true);
+    const lobbyRef = await db.collection("Lobbies").doc(existingRoomID);
+    const gameRef = await db.collection("Lobbies").doc(existingRoomID).collection("Games");
+    const lobbyID = await gameRef.where("playing", "==", "lobby").get();
+    if (lobbyID && lobbyID.docs && lobbyID.docs[0]) {
+      setNewGameID(lobbyID.docs[0].id);
+    } else {
+      setDisabledStart(false);
+      console.log("That lobby ID doesn't exist!", lobbyID);
+    }
+    const doc = await lobbyRef.get();
     if (!doc.exists) {
       setRoomAlert(true);
     } else {
@@ -66,25 +84,30 @@ function LandingPage() {
         isHost: false,
         id: newPlayerID,
       });
-      await gameRef.update({ teamSettings: { teams: updatedTeam } });
-      setRedirectPlayer(true);
+      await lobbyRef.update({ teamSettings: { teams: updatedTeam } }).then(setRedirectPlayer(true));
     }
   };
 
   if (redirectHost) {
+    sessionStorage.setItem("playerID", newPlayerID);
+    sessionStorage.setItem("lobbyID", newRoomID);
+    sessionStorage.setItem("gameID", newGameID);
     return (
       <Redirect
         to={{
-          pathname: `/host/${newRoomID}/${newPlayerID}`,
+          pathname: `/host`,
           state: { hostName: nameInput },
         }}
       />
     );
   } else if (redirectPlayer) {
+    sessionStorage.setItem("playerID", newPlayerID);
+    sessionStorage.setItem("lobbyID", existingRoomID);
+    sessionStorage.setItem("gameID", newGameID);
     return (
       <Redirect
         to={{
-          pathname: `/play/${existingRoomID}/${newPlayerID}`,
+          pathname: `/play`,
           state: { playerName: nameInput },
         }}
       />
@@ -94,7 +117,7 @@ function LandingPage() {
       <MuiThemeProvider theme={theme}>
         <div>
           <Typography variant="h4">
-            Welcome to taboowithfriends!
+            Welcome to taboowithfriends🥳!
             <Typography variant="caption">BETA</Typography>
           </Typography>
 
@@ -118,16 +141,14 @@ function LandingPage() {
                 size="large"
                 style={{ margin: 15, backgroundColor: "#ffac12" }}
                 onClick={handleCreateSubmit}
-                disabled={!newRoomID || !nameInput}
+                disabled={!newRoomID || !nameInput || disabledStart}
               >
                 CREATE GAME
               </Button>
 
               <div>
                 <TextField
-                  onChange={(e) =>
-                    setNewRoomID(e.target.value.replace(/\s/g, ""))
-                  }
+                  onChange={(e) => setNewRoomID(e.target.value.replace(/\s/g, ""))}
                   value={newRoomID}
                   variant="outlined"
                   placeholder="New Room ID"
@@ -144,7 +165,7 @@ function LandingPage() {
                 size="large"
                 style={{ margin: 15, backgroundColor: "#ffac12" }}
                 onClick={handleJoinSubmit}
-                disabled={!existingRoomID || !nameInput}
+                disabled={!existingRoomID || !nameInput || disabledStart}
               >
                 JOIN GAME
               </Button>
@@ -167,6 +188,20 @@ function LandingPage() {
               </div>
             </Grid>
           </Grid>
+          <br />
+
+          <div>
+            <Acknowledgements open={openAcknowledgements} setOpenAcknowledgements={setOpenAcknowledgements} />
+            {/* <IconButton style={{ width: 50, height: 50, margin: 2 }}>
+              <GitHubIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></GitHubIcon>
+            </IconButton>
+            <IconButton style={{ width: 50, height: 50, margin: 2 }}>
+              <MailIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></MailIcon>
+            </IconButton>
+            <IconButton style={{ width: 50, height: 50, margin: 2 }}>
+              <HelpIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></HelpIcon>
+            </IconButton> */}
+          </div>
         </div>
       </MuiThemeProvider>
     );
