@@ -112,14 +112,6 @@ function PlayerView({ match, location }) {
     //console.log("current", curPlayerTeamIndex);
     //console.log("new", newPlayerTeamIndex);
 
-    db.collection("Lobbies")
-      .doc(lobbyID)
-      .collection("Games")
-      .doc(gameID)
-      .update({
-        wordsUsed: firebase.firestore.FieldValue.arrayUnion(randomInt),
-      });
-
     const newTeams = oldTeams
       .map((team) => {
         const newPlayers = team.players.filter((player) => {
