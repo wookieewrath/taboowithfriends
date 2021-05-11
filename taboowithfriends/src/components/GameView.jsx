@@ -281,29 +281,25 @@ function GameView({ match, location }) {
   }
 
   function isDescriber() {
-    const teamIndex = gameConfig.activeTeam % gameConfig.teams.length;
-    const currentPlayers = gameConfig.teams[teamIndex].players;
     return (
       gameConfig !== "loading" &&
       !isUndefined(gameConfig) &&
       isTeamActive() &&
       !!gameConfig.teams.find(
         (team) =>
-          team.players[team.describerIndex % currentPlayers.length].id ===
+          team.players[team.describerIndex % team.players.length].id ===
           playerID
       )
     );
   }
 
   function isDescriber2(foo) {
-    const teamIndex = foo.activeTeam % foo.teams.length;
-    const currentPlayers = foo.teams[teamIndex].players;
     return (
       foo !== "loading" &&
       !isUndefined(foo) &&
       !!foo.teams.find(
         (team) =>
-          team.players[team.describerIndex % currentPlayers.length].id ===
+          team.players[team.describerIndex % team.players.length].id ===
           playerID
       )
     );

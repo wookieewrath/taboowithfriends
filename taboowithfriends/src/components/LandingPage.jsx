@@ -14,6 +14,8 @@ import MailIcon from "@material-ui/icons/Mail";
 import HelpIcon from "@material-ui/icons/Help";
 import IconButton from "@material-ui/core/IconButton";
 import Acknowledgements from "./Acknowledgements";
+import "firebase/firestore";
+import firebase from "firebase/app";
 
 const theme = createMuiTheme({
   palette: {
@@ -27,7 +29,7 @@ const newPlayerID = generateID();
 
 function LandingPage() {
   const [nameInput, setNameInput] = useState("");
-  const [newRoomID, setNewRoomID] = useState("");
+  const [roomID, setRoomID] = useState("");
   const [existingRoomID, setExistingRoomID] = useState("");
   const [newGameID, setNewGameID] = useState("");
   const [redirectHost, setRedirectHost] = useState(false);
@@ -38,11 +40,70 @@ function LandingPage() {
 
   const handleCreateSubmit = async (e) => {
     setDisabledStart(true);
-    const lobbyRef = await db.collection("Lobbies").doc(newRoomID);
-    setNewRoomID(lobbyRef.id);
-    const gameRef = await db.collection("Lobbies").doc(newRoomID).collection("Games").add({ playing: "lobby" });
+    const lobbyRef = await db.collection("Lobbies").doc(roomID);
+    const doc = await lobbyRef.get();
+    if (doc.exists) {
+      joinGame(lobbyRef);
+    } else {
+      createGame(lobbyRef);
+    }
+  };
+
+  async function createGame(lobbyRef) {
+    setRoomID(lobbyRef.id);
+    const gameRef = await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Games")
+      .add({ playing: "lobby" });
+
+    let teamsRefID;
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .add({ players: [], teamName: randomAnimal() })
+      .then((doc) => {
+        teamsRefID = doc.id;
+      });
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc(teamsRefID)
+      .set({ id: teamsRefID }, { merge: true });
+
+    let teamsRefID2;
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .add({
+        players: [{ name: nameInput, isHost: true, id: newPlayerID }],
+        teamName: randomAnimal(),
+      })
+      .then((doc) => {
+        teamsRefID2 = doc.id;
+      });
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc(teamsRefID2)
+      .set({ id: teamsRefID2 }, { merge: true });
+
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc("Float")
+      .set({
+        id: "Float",
+        players: [],
+        teamName: "Waiting Room",
+      });
+
     setNewGameID(gameRef.id);
-    console.log(gameRef);
     const gameSettings = defaultGameSettings;
     const teamSettings = {
       teams: [
@@ -61,36 +122,47 @@ function LandingPage() {
     await lobbyRef.set({ gameSettings }, { merge: true });
     await lobbyRef.set({ teamSettings }, { merge: true });
     setRedirectHost(true);
-  };
+  }
 
-  const handleJoinSubmit = async (e) => {
+  async function joinGame(lobbyRef) {
     setDisabledStart(true);
-    const lobbyRef = await db.collection("Lobbies").doc(existingRoomID);
-    const gameRef = await db.collection("Lobbies").doc(existingRoomID).collection("Games");
+
+    const gameRef = await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Games");
+
     const lobbyID = await gameRef.where("playing", "==", "lobby").get();
+
     if (lobbyID && lobbyID.docs && lobbyID.docs[0]) {
       setNewGameID(lobbyID.docs[0].id);
     } else {
       setDisabledStart(false);
-      console.log("That lobby ID doesn't exist!", lobbyID);
+      console.log("Error :/", lobbyID);
     }
+
     const doc = await lobbyRef.get();
-    if (!doc.exists) {
-      setRoomAlert(true);
-    } else {
-      const updatedTeam = doc.data().teamSettings.teams;
-      updatedTeam[0].players.push({
-        name: nameInput,
-        isHost: false,
-        id: newPlayerID,
-      });
-      await lobbyRef.update({ teamSettings: { teams: updatedTeam } }).then(setRedirectPlayer(true));
-    }
-  };
+
+    const floatTeam = await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc("Float");
+
+    floatTeam
+      .update({
+        players: firebase.firestore.FieldValue.arrayUnion({
+          id: newPlayerID,
+          isHost: false,
+          name: nameInput,
+        }),
+      })
+      .then(setRedirectPlayer(true));
+  }
 
   if (redirectHost) {
     sessionStorage.setItem("playerID", newPlayerID);
-    sessionStorage.setItem("lobbyID", newRoomID);
+    sessionStorage.setItem("lobbyID", roomID);
     sessionStorage.setItem("gameID", newGameID);
     return (
       <Redirect
@@ -102,7 +174,7 @@ function LandingPage() {
     );
   } else if (redirectPlayer) {
     sessionStorage.setItem("playerID", newPlayerID);
-    sessionStorage.setItem("lobbyID", existingRoomID);
+    sessionStorage.setItem("lobbyID", roomID);
     sessionStorage.setItem("gameID", newGameID);
     return (
       <Redirect
@@ -133,32 +205,32 @@ function LandingPage() {
             value={nameInput}
           />
           <p></p>
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={6}>
+          <Grid container>
+            <Grid item xs={12} sm={12}>
               <Button
                 variant="contained"
                 color="primary"
                 size="large"
                 style={{ margin: 15, backgroundColor: "#ffac12" }}
                 onClick={handleCreateSubmit}
-                disabled={!newRoomID || !nameInput || disabledStart}
+                disabled={!roomID || !nameInput || disabledStart}
               >
-                CREATE GAME
+                Create or Join a Lobby
               </Button>
 
               <div>
                 <TextField
-                  onChange={(e) => setNewRoomID(e.target.value.replace(/\s/g, ""))}
-                  value={newRoomID}
+                  onChange={(e) => setRoomID(e.target.value.replace(/\s/g, ""))}
+                  value={roomID}
                   variant="outlined"
-                  placeholder="New Room ID"
+                  placeholder="Lobby Name"
                   style={{ margin: 8 }}
                   color="secondary"
                   inputProps={{ style: { textAlign: "center" } }}
                 ></TextField>
               </div>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            {/* <Grid item xs={12} sm={6}>
               <Button
                 variant="contained"
                 color="primary"
@@ -186,12 +258,15 @@ function LandingPage() {
                   helperText={roomAlert ? `Room does not exist` : ``}
                 ></TextField>
               </div>
-            </Grid>
+            </Grid> */}
           </Grid>
           <br />
 
           <div>
-            <Acknowledgements open={openAcknowledgements} setOpenAcknowledgements={setOpenAcknowledgements} />
+            <Acknowledgements
+              open={openAcknowledgements}
+              setOpenAcknowledgements={setOpenAcknowledgements}
+            />
             {/* <IconButton style={{ width: 50, height: 50, margin: 2 }}>
               <GitHubIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></GitHubIcon>
             </IconButton>

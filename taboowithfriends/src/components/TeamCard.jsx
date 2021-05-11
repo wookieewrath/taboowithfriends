@@ -26,6 +26,7 @@ function TeamCard({
   deletePlayer,
   playerView,
   joinTeam,
+  joinDisabled,
 }) {
   const [isDisabled, setIsDisabled] = useState(false);
   const timeoutID = useRef(1);
@@ -37,9 +38,19 @@ function TeamCard({
   return (
     <MuiThemeProvider theme={theme}>
       <Card
-        style={{ maxWidth: "100vw", minHeight: 50, padding: 15, margin: 5 }}
+        style={{
+          maxWidth: "100vw",
+          minHeight: 50,
+          padding: 15,
+          margin: 5,
+          //backgroundColor: teamName === "Waiting Room" ? "transparent" : null,
+          //boxShadow: teamName === "Waiting Room" ? "none" : null,
+          ...(teamName === "Waiting Room"
+            ? { backgroundColor: "transparent", boxShadow: "none" }
+            : {}),
+        }}
       >
-        <Typography>{teamName}</Typography>
+        <Typography>{teamName !== "Waiting Room" ? teamName : ""}</Typography>
 
         {teamList.map((player) => {
           return (
@@ -61,10 +72,11 @@ function TeamCard({
               onClick={() => {
                 joinTeam(teamID);
               }}
+              disabled={joinDisabled}
             >
-              Join Team
+              {teamName === "Waiting Room" ? "Join Waiting Room" : "Join Team"}
             </Button>
-          ) : teamList.length === 0 ? (
+          ) : teamList.length === 0 && teamName !== "Waiting Room" ? (
             <Button
               size="small"
               color="secondary"
@@ -72,7 +84,7 @@ function TeamCard({
                 deleteTeam(teamID);
                 setIsDisabled(true);
               }}
-              isDisabled={isDisabled}
+              disabled={isDisabled}
             >
               Delete Team
             </Button>

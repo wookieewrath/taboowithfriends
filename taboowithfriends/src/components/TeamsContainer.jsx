@@ -2,11 +2,24 @@ import { Grid } from "@material-ui/core";
 import React from "react";
 import TeamCard from "./TeamCard";
 
-function TeamsContainer({ dataForTeamsContainer, deleteTeam, deletePlayer, playerView, joinTeam }) {
+function TeamsContainer({
+  teamsArray,
+  deleteTeam,
+  deletePlayer,
+  playerView = false,
+  joinTeam,
+  joinDisabled,
+}) {
   return (
-    <div>
-      <Grid container spacing={1} justify="center" alignItems="center">
-        {dataForTeamsContainer.teams.map((team) => {
+    <Grid item>
+      <Grid
+        container
+        spacing={1}
+        justify="center"
+        alignItems="center"
+        direction="row"
+      >
+        {teamsArray.map((team) => {
           return (
             <Grid item md key={team.id}>
               <TeamCard
@@ -17,12 +30,13 @@ function TeamsContainer({ dataForTeamsContainer, deleteTeam, deletePlayer, playe
                 deletePlayer={deletePlayer}
                 playerView={playerView}
                 joinTeam={joinTeam}
+                joinDisabled={joinDisabled}
               ></TeamCard>
             </Grid>
           );
         })}
       </Grid>
-    </div>
+    </Grid>
   );
 }
 

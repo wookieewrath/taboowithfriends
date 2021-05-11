@@ -4,6 +4,9 @@ import LandingPage from "./components/LandingPage";
 import PlayerView from "./components/PlayerView";
 import GameView from "./components/GameView";
 import Timer from "./components/Timer";
+import Tester from "./components/Tester";
+import OneDay from "./components/OneDay";
+
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
@@ -17,6 +20,7 @@ function App() {
             <Route path="/play" exact component={PlayerView} />
             <Route path="/game" exact component={GameView} />
             <Route path="/timer" exact component={Timer} />
+            <Route path="/tester" exact component={Tester} />
           </Switch>
         </header>
       </div>
