@@ -65,6 +65,7 @@ function HostView({ match, location }) {
         .doc(lobbyID)
         .collection("Teams");
 
+      // As of now, we just hope this if-check is valid :grimacing:
       if (teamsCollection && lobbyRefObj.exists) {
         setGameSettings(lobbyRefObj.data().gameSettings);
         return teamsCollection.onSnapshot((querySnapshot) => {
@@ -72,21 +73,21 @@ function HostView({ match, location }) {
           setTeamsArray(teams);
           setIsLoading(false);
         });
+      } else {
+        console.log("foo");
       }
     }
     return initDB();
   }, []);
 
   useEffect(() => {
-    const playingSnapshot = db
-      .collection("Lobbies")
+    db.collection("Lobbies")
       .doc(lobbyID)
       .collection("Games")
       .doc(gameID)
       .onSnapshot((doc) => {
         setIsPlaying(doc.data().playing);
       });
-    return playingSnapshot;
   }, []);
 
   useEffect(() => {
@@ -116,7 +117,7 @@ function HostView({ match, location }) {
   }, [teamSettings]);
 
   async function deleteTeam(teamToDelete) {
-    if (teamsArray.length > 2) {
+    if (teamsArray.length > 3) {
       await db
         .collection("Lobbies")
         .doc(lobbyID)
