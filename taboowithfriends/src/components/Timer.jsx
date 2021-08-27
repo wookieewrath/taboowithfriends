@@ -5,7 +5,8 @@ import React, { useState } from "react";
 import { db } from "../constants";
 
 function Timer() {
-  const [buttonFourData, setButtonFourData] = useState();
+  const [buttonFourData, setButtonFourData] = useState("");
+  const [buttonFiveData, setButtonFiveData] = useState("");
 
   function buttonOne() {
     db.collection("Demo").doc("DemoDocument").set({ name: "Foo" });
@@ -17,8 +18,17 @@ function Timer() {
     db.collection("Demo").doc("DemoDocument").update({ name: "UpdatedName" });
   }
   async function buttonFour() {
-    const doc = db.collection("Demo").doc("DemoDocument").get();
+    const doc = await db.collection("Demo").doc("DemoDocument").get();
     console.log(doc.data());
+    setButtonFourData(doc.data().name);
+  }
+  async function buttonFive() {
+    db.collection("Demo")
+      .doc("DemoDocument")
+      .onSnapshot((doc) => {
+        console.log("Current data: ", doc.data());
+        setButtonFiveData(doc.data().name);
+      });
   }
 
   return (
@@ -66,9 +76,33 @@ function Timer() {
         }}
         onClick={buttonFour}
       >
-        Updated Document {buttonFourData}
+        Get Data
       </Button>
-      <Typography>{`db.collection("Demo").add({ name: "Foo2" });`}</Typography>
+      <Typography>
+        {`doc = db.collection("Demo").doc("DemoDocument").get()`}
+      </Typography>
+      <Typography>{`doc.data()`}</Typography>
+      <Typography>{buttonFourData}</Typography>
+
+      <Button
+        style={{
+          backgroundColor: "#ffbf47",
+          fontWeight: "bold",
+          margin: 15,
+        }}
+        onClick={buttonFive}
+      >
+        Start Listener
+      </Button>
+      <Typography>
+        {` db.collection("Demo")
+      .doc("DemoDocument")
+      .onSnapshot((doc) => {
+        setButtonFiveData(doc.data().name);
+      });`}
+        {buttonFiveData}
+      </Typography>
+      <Typography>{buttonFiveData}</Typography>
     </div>
   );
 }

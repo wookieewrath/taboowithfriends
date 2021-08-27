@@ -175,7 +175,8 @@ function PlayerView({ match, location }) {
 
   useEffect(() => {
     if (!isUndefined(teamsArray) && !isNull(teamsArray) && !joinDisabled) {
-      handleKickStatus();
+      clearInterval(timeoutID.current);
+      timeoutID.current = setTimeout(() => handleKickStatus(), 300);
     }
   }, [teamsArray, joinDisabled]);
 

@@ -48,16 +48,16 @@ function GameView({ match, location }) {
       .collection("Games")
       .doc(gameID)
       .onSnapshot((doc) => {
-        setGameConfig((prevGameConfig) => {
+        setGameConfig((currentGameConfig) => {
           const newGameConfig = doc.data();
           if (
-            prevGameConfig === "loading" &&
+            currentGameConfig === "loading" && // Check if the page has been refreshed
             doc.data().roundEndTime !== -1 &&
             isTeamActive2(doc.data()) &&
             isDescriber2(doc.data())
           ) {
             console.log("ayy");
-            startTimer();
+            startTimer(); // Handles page refresh
           }
           return newGameConfig;
         });

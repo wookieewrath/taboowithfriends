@@ -19,8 +19,8 @@ function App() {
             <Route path="/host" exact component={HostView} />
             <Route path="/play" exact component={PlayerView} />
             <Route path="/game" exact component={GameView} />
-            <Route path="/timer" exact component={Timer} />
-            <Route path="/tester" exact component={Tester} />
+            {/* <Route path="/timer" exact component={Timer} />
+            <Route path="/tester" exact component={Tester} /> */}
           </Switch>
         </header>
       </div>

@@ -207,10 +207,7 @@ function LandingPage() {
     return (
       <MuiThemeProvider theme={theme}>
         <div>
-          <Typography variant="h4">
-            Welcome to taboowithfriends🥳!
-            <Typography variant="caption">BETA</Typography>
-          </Typography>
+          <Typography variant="h4">Welcome to taboowithfriends🥳!</Typography>
 
           <TextField
             color="secondary"
@@ -232,13 +229,13 @@ function LandingPage() {
                 size="large"
                 style={{
                   backgroundColor: "#ffac12",
-                  marginTop: "50px",
+                  marginTop: "20px",
                   marginBottom: "50px",
                 }}
                 onClick={handleCreateSubmit}
                 disabled={!nameInput || disabledStart}
               >
-                Create Lobby
+                Create New Lobby
               </Button>
               {/* 
               <div>
@@ -260,11 +257,14 @@ function LandingPage() {
                 variant="contained"
                 color="primary"
                 size="large"
-                style={{ margin: 15, backgroundColor: "#ffac12" }}
+                style={{
+                  backgroundColor: "#ffac12",
+                  marginTop: "20px",
+                }}
                 onClick={joinGame}
                 disabled={!existingRoomID || !nameInput || disabledStart}
               >
-                JOIN LOBBY
+                JOIN EXISTING LOBBY
               </Button>
 
               <div>
@@ -277,7 +277,7 @@ function LandingPage() {
                   }}
                   value={existingRoomID}
                   variant="outlined"
-                  placeholder="Existing Lobby ID"
+                  placeholder="Enter Lobby ID"
                   style={{ margin: 8 }}
                   color="secondary"
                   inputProps={{ style: { textAlign: "center" } }}
