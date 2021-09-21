@@ -4,11 +4,15 @@ import {
   makeStyles,
   MuiThemeProvider,
 } from "@material-ui/core/styles";
-import { isEqual } from "lodash";
-import React, { useEffect, useState } from "react";
+import { isEqual, isNull, isUndefined, set } from "lodash";
+import React, { useEffect, useState, useRef } from "react";
 import { useHistory } from "react-router-dom";
 import { db } from "../constants";
 import TeamsContainer from "./TeamsContainer";
+import { Redirect } from "react-router-dom";
+import "firebase/firestore";
+import firebase from "firebase/app";
+import Confetti from "react-dom-confetti";
 
 // Styling that apparently can't be inline :( !
 const useStyles = makeStyles({
@@ -26,109 +30,157 @@ const theme = createMuiTheme({
     },
   },
 });
+const confettiConfig = {
+  angle: 90,
+  spread: 360,
+  startVelocity: 40,
+  elementCount: 130,
+  dragFriction: 0.12,
+  duration: 3000,
+  stagger: 3,
+  width: "10px",
+  height: "10px",
+  perspective: "300px",
+  colors: ["#a864fd", "#29cdff", "#78ff44", "#ff718d", "#fdff6a"],
+};
 
 function PlayerView({ match, location }) {
   const classes = useStyles();
-  const [gameID, setGameID] = useState(match.params.roomID);
-  const [isLoading, setIsLoading] = useState(true);
-  const playerName = location.state.playerName;
-  const playerID = parseInt(match.params.playerID, 10);
+  const [lobbyID, setLobbyID] = useState(sessionStorage.getItem("lobbyID"));
+  const [gameID, setGameID] = useState(sessionStorage.getItem("gameID"));
+  const [isTeamsLoading, setIsTeamsLoading] = useState(true);
+  const [isGameLoading, setIsGameLoading] = useState(true);
+  const playerID = parseInt(sessionStorage.getItem("playerID"), 10);
   const [isKicked, setIsKicked] = useState(false);
   const history = useHistory();
   const [gameSettings, setGameSettings] = useState();
   const [teamSettings, setTeamSettings] = useState();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const timeoutID = useRef(1);
+  const [teamsArray, setTeamsArray] = useState();
+  const [joinDisabled, setJoinDisabled] = useState(false);
+  const [canKicked, setCanKicked] = useState(true);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
-    const initDB = db
+    async function initDB() {
+      const lobbyRef = await db.collection("Lobbies").doc(lobbyID);
+      const lobbyRefObj = await lobbyRef.get();
+
+      const teamsCollection = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams");
+
+      if (teamsCollection && lobbyRefObj.exists) {
+        return teamsCollection.onSnapshot((querySnapshot) => {
+          const teams = querySnapshot.docs.map((doc) => doc.data());
+          setTeamsArray(teams);
+          setIsTeamsLoading(false);
+        });
+      }
+    }
+    return initDB();
+  }, []);
+
+  useEffect(() => {
+    async function initGameSettings() {
+      const lobbyRef = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .onSnapshot((doc) => {
+          setIsGameLoading(false);
+          setGameSettings(doc.data().gameSettings);
+        });
+      return lobbyRef;
+    }
+    return initGameSettings();
+  }, []);
+
+  useEffect(() => {
+    const playingSnapshot = db
+      .collection("Lobbies")
+      .doc(lobbyID)
       .collection("Games")
       .doc(gameID)
       .onSnapshot((doc) => {
-        setGameSettings(doc.data().gameSettings);
-        setTeamSettings(doc.data().teamSettings);
-        setIsLoading(false);
+        setIsPlaying(doc.data().playing);
       });
-    return initDB;
+    return playingSnapshot;
   }, []);
 
-  function deleteTeam(teamToDelete) {
-    if (teamSettings.teams.length > 2) {
-      const newTeam = {
-        ...teamSettings,
-        teams: teamSettings.teams.filter((x) => x.teamName !== teamToDelete),
-      };
-      db.collection("Games")
-        .doc(gameID)
-        .set({ teamSettings: newTeam }, { merge: true });
-      setTeamSettings(newTeam);
-      return newTeam;
-    }
+  function getPlayerObject() {
+    const playerObject = teamsArray
+      .find((team) => team.players.find((player) => player.id === playerID))
+      .players.find((player) => player.id === playerID);
+
+    return playerObject;
   }
 
-  function deletePlayer(playerToDelete) {
-    setTeamSettings((prevState) => {
-      const newTeam = {
-        ...prevState,
-        teams: prevState.teams.map((team) => ({
-          teamName: team.teamName,
-          players: team.players.filter(
-            (player) => player.id !== playerToDelete
-          ),
-        })),
-      };
-      db.collection("Games")
-        .doc(gameID)
-        .set({ teamSettings: newTeam }, { merge: true });
-      return newTeam;
-    });
+  function getCurrentTeamID() {
+    const currentTeamID = teamsArray.find((team) =>
+      team.players.find((player) => player.id === playerID)
+    ).id;
+
+    return currentTeamID;
   }
 
   async function joinTeam(newTeamID) {
-    const gameRef = await db.collection("Games").doc(gameID);
-    const doc = await gameRef.get();
-    const oldTeams = doc.data().teamSettings.teams;
-    let curPlayer;
-    const newTeams = oldTeams
-      .map((team) => {
-        const newPlayers = team.players.filter((player) => {
-          if (player.id === playerID) {
-            curPlayer = player;
-          }
-          return player.id !== playerID;
-        });
-        team.players = newPlayers;
-        return team;
-      })
-      .map((team) => {
-        if (team.id === newTeamID) {
-          team.players.push(curPlayer);
-          return team;
-        }
-        return team;
-      });
-    await gameRef.update({ teamSettings: { teams: newTeams } });
+    setJoinDisabled(true);
+    const playerObject = getPlayerObject();
+    const currentTeamID = getCurrentTeamID();
+
+    if (newTeamID !== currentTeamID) {
+      let currentTeamRef = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc(currentTeamID);
+      let newTeamRef = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc(newTeamID);
+
+      await Promise.all([
+        currentTeamRef.update({
+          players: firebase.firestore.FieldValue.arrayRemove(playerObject),
+        }),
+        newTeamRef.update({
+          players: firebase.firestore.FieldValue.arrayUnion(playerObject),
+        }),
+      ]);
+    }
+    setJoinDisabled(false);
   }
 
-  async function inTeam(playerID) {
-    const gameRef = await db.collection("Games").doc(gameID);
-    const doc = await gameRef.get();
-    const teams = doc.data().teamSettings.teams;
+  async function handleKickStatus() {
+    const teamObject = teamsArray.find((team) =>
+      team.players.find((player) => player.id === playerID)
+    );
 
-    for (let i = 0; i < teams.length; i++) {
-      for (let j = 0; j < teams[i].players.length; j++) {
-        if (isEqual(teams[i].players[j].id, playerID)) {
-          return true;
-        }
-      }
+    // This if/else captures the "canKicked" for the next run of this function -- Not the current run!
+    if (teamObject && teamObject.id === "Float") {
+      setCanKicked(true);
+    } else if (teamObject) {
+      setCanKicked(false);
     }
-    setIsKicked(true);
-    return false;
+
+    // The canKicked that is checked in this IF statement checks the 'previous' value of canKicked
+    // -- NOT the canKicked that is set above!
+    if (!teamObject && canKicked) {
+      setIsKicked(true);
+    }
   }
 
   useEffect(() => {
-    inTeam(playerID);
-  }, [gameSettings, teamSettings]);
+    if (!isUndefined(teamsArray) && !isNull(teamsArray) && !joinDisabled) {
+      clearInterval(timeoutID.current);
+      timeoutID.current = setTimeout(() => handleKickStatus(), 300);
+    }
+  }, [teamsArray, joinDisabled]);
 
-  if (isLoading) {
+  if (isTeamsLoading || isGameLoading || teamsArray.isUndefined) {
     return (
       <div>
         <h1>Loading</h1>
@@ -151,14 +203,25 @@ function PlayerView({ match, location }) {
         </Button>
       </div>
     );
+  } else if (isPlaying === "game") {
+    sessionStorage.setItem("playerID", playerID);
+    sessionStorage.setItem("lobbyID", lobbyID);
+    sessionStorage.setItem("gameID", gameID);
+    return (
+      <Redirect
+        to={{
+          pathname: `/game`,
+        }}
+      />
+    );
   } else
     return (
       <MuiThemeProvider theme={theme}>
         <p></p>
         <div>You are currently in Room:</div>
-        <div>{gameID}</div>
+        <div style={{ marginBottom: "25px" }}>{lobbyID}</div>
         <div className={classes.root}>
-          <h6>
+          <h6 style={{ margin: "25px" }}>
             Game Mode:{" "}
             <span style={{ fontWeight: "normal" }}>
               {gameSettings.gameMode === "turn"
@@ -166,28 +229,28 @@ function PlayerView({ match, location }) {
                 : `Score Limit of ${gameSettings.scoreLimit} points`}
             </span>
           </h6>
-          <h6>
+          <h6 style={{ margin: "25px" }}>
             Seconds Per Round:{" "}
             <span style={{ fontWeight: "normal" }}>
               {" "}
               {gameSettings.secondsPerRound}{" "}
             </span>
           </h6>
-          <h6>
+          <h6 style={{ margin: "25px" }}>
             Buzz Penalty:{" "}
             <span style={{ fontWeight: "normal" }}>
               {" "}
               {gameSettings.buzzPenalty}{" "}
             </span>
           </h6>
-          <h6>
+          <h6 style={{ margin: "25px" }}>
             Skip Penalty:{" "}
             <span style={{ fontWeight: "normal" }}>
               {" "}
               {gameSettings.skipPenalty}{" "}
             </span>
           </h6>
-          <h6>
+          <h6 style={{ margin: "25px" }}>
             Correct Reward:{" "}
             <span style={{ fontWeight: "normal" }}>
               {" "}
@@ -197,12 +260,23 @@ function PlayerView({ match, location }) {
         </div>
 
         <TeamsContainer
-          dataForTeamsContainer={teamSettings}
-          deleteTeam={deleteTeam}
-          deletePlayer={deletePlayer}
+          teamsArray={teamsArray.filter(
+            (team) => team.teamName === "Waiting Room"
+          )}
           playerView={true}
           joinTeam={joinTeam}
+          joinDisabled={joinDisabled}
         />
+        <div />
+        <TeamsContainer
+          teamsArray={teamsArray.filter(
+            (team) => team.teamName !== "Waiting Room"
+          )}
+          playerView={true}
+          joinTeam={joinTeam}
+          joinDisabled={joinDisabled}
+        />
+
         <br />
       </MuiThemeProvider>
     );

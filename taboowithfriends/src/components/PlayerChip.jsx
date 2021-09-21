@@ -7,7 +7,6 @@ function PlayerChip({ isHost, name, deletePlayer, id, playerView, playerID }) {
   return (
     <Chip
       label={name}
-      //id={IDBFactory}
       onDelete={
         isHost || playerView
           ? null

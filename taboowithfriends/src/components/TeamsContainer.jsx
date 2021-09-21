@@ -3,18 +3,25 @@ import React from "react";
 import TeamCard from "./TeamCard";
 
 function TeamsContainer({
-  dataForTeamsContainer,
+  teamsArray,
   deleteTeam,
   deletePlayer,
-  playerView,
+  playerView = false,
   joinTeam,
+  joinDisabled,
 }) {
   return (
-    <div>
-      <Grid container spacing={1} justify="center" alignItems="center">
-        {dataForTeamsContainer.teams.map((team) => {
+    <Grid item>
+      <Grid
+        container
+        spacing={1}
+        justify="center"
+        alignItems="center"
+        direction="row"
+      >
+        {teamsArray.map((team) => {
           return (
-            <Grid item md>
+            <Grid item md key={team.id}>
               <TeamCard
                 teamName={team.teamName}
                 teamList={team.players}
@@ -23,12 +30,13 @@ function TeamsContainer({
                 deletePlayer={deletePlayer}
                 playerView={playerView}
                 joinTeam={joinTeam}
+                joinDisabled={joinDisabled}
               ></TeamCard>
             </Grid>
           );
         })}
       </Grid>
-    </div>
+    </Grid>
   );
 }
 

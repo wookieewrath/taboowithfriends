@@ -19,6 +19,9 @@ import { db } from "../constants";
 import { generateID } from "../id";
 import { isEqual } from "lodash";
 import { randomAnimal } from "../animal";
+import { Redirect } from "react-router-dom";
+import "firebase/firestore";
+import firebase from "firebase/app";
 
 // Styling that apparently can't be inline :( !
 const useStyles = makeStyles({
@@ -39,35 +42,52 @@ const theme = createMuiTheme({
 
 function HostView({ match, location }) {
   const classes = useStyles();
-  const [gameID, setGameID] = useState(match.params.roomID);
-  const [hostID, setHostID] = useState(match.params.playerID);
+  const [lobbyID, setLobbyID] = useState(sessionStorage.getItem("lobbyID"));
+  const [gameID, setGameID] = useState(sessionStorage.getItem("gameID"));
+  const [hostID, setHostID] = useState(sessionStorage.getItem("playerID"));
+  const [isPlaying, setIsPlaying] = useState(false);
   const [gameSettings, setGameSettings] = useState({});
   const [teamSettings, setTeamSettings] = useState({});
   const [oldTeamSettings, setOldTeamSettings] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const timeoutID = useRef(1);
+  const [wordPackLength, setWordPackLength] = useState(0);
+  const [teamsCollection, setTeamsCollection] = useState();
+  const [teamsArray, setTeamsArray] = useState();
 
   useEffect(() => {
     async function initDB() {
-      const gameRef = await db.collection("Games").doc(gameID);
-      const gameRefObj = await gameRef.get();
-      if (gameRefObj.exists) {
-        setGameSettings(gameRefObj.data().gameSettings);
-        setTeamSettings(gameRefObj.data().teamSettings);
-        setIsLoading(false);
-        return gameRef.onSnapshot((doc) => {
-          if (
-            teamSettings &&
-            Object.keys(teamSettings).length !== 0 &&
-            !isEqual(oldTeamSettings, teamSettings)
-          ) {
-            setOldTeamSettings(teamSettings);
-            setTeamSettings(doc.data().teamSettings);
-          }
+      const lobbyRef = await db.collection("Lobbies").doc(lobbyID);
+      const lobbyRefObj = await lobbyRef.get();
+
+      const teamsCollection = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams");
+
+      // As of now, we just hope this if-check is valid :grimacing:
+      if (teamsCollection && lobbyRefObj.exists) {
+        setGameSettings(lobbyRefObj.data().gameSettings);
+        return teamsCollection.onSnapshot((querySnapshot) => {
+          const teams = querySnapshot.docs.map((doc) => doc.data());
+          setTeamsArray(teams);
+          setIsLoading(false);
         });
+      } else {
+        console.log("foo");
       }
     }
     return initDB();
+  }, []);
+
+  useEffect(() => {
+    db.collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID)
+      .onSnapshot((doc) => {
+        setIsPlaying(doc.data().playing);
+      });
   }, []);
 
   useEffect(() => {
@@ -76,10 +96,10 @@ function HostView({ match, location }) {
       timeoutID.current = setTimeout(
         () =>
           db
-            .collection("Games")
-            .doc(gameID)
+            .collection("Lobbies")
+            .doc(lobbyID)
             .set({ gameSettings }, { merge: true }),
-        2000
+        1000
       );
     }
   }, [gameSettings]);
@@ -90,81 +110,185 @@ function HostView({ match, location }) {
       Object.keys(teamSettings).length !== 0 &&
       !isEqual(oldTeamSettings, teamSettings)
     ) {
-      db.collection("Games").doc(gameID).set({ teamSettings }, { merge: true });
+      db.collection("Lobbies")
+        .doc(lobbyID)
+        .set({ teamSettings }, { merge: true });
     }
   }, [teamSettings]);
 
-  function deleteTeam(teamToDelete) {
-    if (teamSettings.teams.length > 2) {
-      if (!containsHost(teamToDelete)) {
-        setTeamSettings({
-          ...teamSettings,
-          teams: teamSettings.teams.filter((x) => x.id !== teamToDelete),
-        });
-      } else {
-        console.log("The host is on that team!");
-      }
+  async function deleteTeam(teamToDelete) {
+    if (teamsArray.length > 3) {
+      await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc(teamToDelete)
+        .delete()
+        .then(console.log("Deleted!"));
     } else {
       console.log("There must be at least two teams!");
     }
   }
 
-  function containsHost(teamID) {
-    for (let i = 0; i < teamSettings.teams.length; i++) {
-      if (teamSettings.teams[i].id === teamID) {
-        for (let j = 0; j < teamSettings.teams[i].players.length; j++) {
-          if (teamSettings.teams[i].players[j].isHost) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
+  //TODO: Error handling
+  function getPlayerObject(playerToDeleteID) {
+    const playerObject = teamsArray
+      .find((team) =>
+        team.players.find((player) => player.id === playerToDeleteID)
+      )
+      .players.find((player) => player.id === playerToDeleteID);
+
+    return playerObject;
+  }
+  //TODO: Error handling
+  function getPlayerTeamID(playerForWhomWeAreGettingTheID) {
+    const currentTeamID = teamsArray.find((team) =>
+      team.players.find(
+        (player) => player.id === playerForWhomWeAreGettingTheID
+      )
+    ).id;
+
+    return currentTeamID;
   }
 
-  function deletePlayer(playerToDelete) {
-    setTeamSettings((prevState) => {
-      return {
-        ...prevState,
-        teams: prevState.teams.map((team) => ({
-          teamName: team.teamName,
-          id: team.id,
-          players: team.players.filter(
-            (player) => player.id !== playerToDelete
-          ),
-        })),
-      };
-    });
-  }
+  async function deletePlayer(playerToDelete) {
+    const objectOfPlayerToDelete = getPlayerObject(playerToDelete);
+    const currentTeamIDThatPlayerIsOn = getPlayerTeamID(playerToDelete);
 
-  function addTeam() {
-    if (teamSettings.teams.length < 10) {
-      setTeamSettings({
-        ...teamSettings,
-        teams: teamSettings.teams.concat({
-          teamName: randomAnimal(),
-          id: generateID(),
-          players: [
-            { name: "Sarah", isHost: false, id: generateID() },
-            { name: "Anne", isHost: false, id: generateID() },
-            { name: "Frank", isHost: false, id: generateID() },
-            { name: "Jack", isHost: false, id: generateID() },
-          ],
-        }),
+    if (currentTeamIDThatPlayerIsOn === "Float") {
+      let currentTeamRef = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc(currentTeamIDThatPlayerIsOn);
+      await currentTeamRef.update({
+        players: firebase.firestore.FieldValue.arrayRemove(
+          objectOfPlayerToDelete
+        ),
       });
     } else {
-      console.log("You don't have that many friends! Stop adding teams...");
+      let currentTeamRef = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc(currentTeamIDThatPlayerIsOn);
+      let newTeamRef = await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc("Float");
+
+      await Promise.all([
+        currentTeamRef.update({
+          players: firebase.firestore.FieldValue.arrayRemove(
+            objectOfPlayerToDelete
+          ),
+        }),
+        newTeamRef.update({
+          players: firebase.firestore.FieldValue.arrayUnion(
+            objectOfPlayerToDelete
+          ),
+        }),
+      ]);
     }
+  }
+
+  async function addTeam() {
+    if (teamsArray.length < 10) {
+      let teamsRefID;
+      await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .add({ players: [], teamName: randomAnimal() })
+        .then((doc) => {
+          teamsRefID = doc.id;
+        });
+      await db
+        .collection("Lobbies")
+        .doc(lobbyID)
+        .collection("Teams")
+        .doc(teamsRefID)
+        .set({ id: teamsRefID }, { merge: true });
+    } else {
+      console.log("Too many teams!");
+    }
+  }
+
+  function checkTeamsValid() {
+    return (
+      teamsArray.length > 1 &&
+      !teamsArray.filter(
+        (team) => team.players.length < 2 && team.id !== "Float"
+      ).length
+    );
+  }
+
+  async function startGame() {
+    const gameRef = await db
+      .collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID);
+    const teamsForGame = teamsArray
+      .filter((team) => team.id !== "Float")
+      .map((team) => ({
+        ...team,
+        describerIndex: 0,
+        score: 0,
+      }));
+    const wordsRef = await db.collection("Words").doc("WordPack");
+    const wordsDoc = await wordsRef.get();
+    const words = await wordsDoc.data();
+    let randomInt = Math.floor(Math.random() * words.length); //TODO: Fix this hardcoded value....
+    let randomWord = words.wordsArray[randomInt];
+    await gameRef.set(
+      {
+        ...gameSettings,
+        teams: teamsForGame,
+        activeTeam: 0,
+        inRound: false,
+        roundNumber: 1,
+        wordsUsed: [],
+        currentWord: {
+          _id: randomWord._id,
+          badwords: randomWord.badwords,
+          title: randomWord.title,
+        },
+        gameOver: false,
+        roundEndTime: -1,
+      },
+      { merge: true }
+    );
+    await db
+      .collection("Lobbies")
+      .doc(lobbyID)
+      .collection("Games")
+      .doc(gameID)
+      .update({
+        playing: "game",
+      });
   }
 
   if (isLoading) {
     return <h1>Loading...</h1>;
+  } else if (isPlaying === "game") {
+    sessionStorage.setItem("playerID", hostID);
+    sessionStorage.setItem("lobbyID", lobbyID);
+    sessionStorage.setItem("gameID", gameID);
+    return (
+      <Redirect
+        to={{
+          pathname: `/game`,
+        }}
+      />
+    );
   } else
     return (
       <MuiThemeProvider theme={theme}>
         <p></p>
         <div>Your Room ID:</div>
-        <div>{gameID}</div>
+        <div>{lobbyID}</div>
         <p></p>
         <div className={classes.root}>
           <FormControl component="fieldset">
@@ -308,10 +432,20 @@ function HostView({ match, location }) {
         </Button>
 
         <TeamsContainer
-          dataForTeamsContainer={teamSettings}
+          teamsArray={teamsArray.filter(
+            (team) => team.teamName === "Waiting Room"
+          )}
           deleteTeam={deleteTeam}
           deletePlayer={deletePlayer}
-        ></TeamsContainer>
+        />
+        <div />
+        <TeamsContainer
+          teamsArray={teamsArray.filter(
+            (team) => team.teamName !== "Waiting Room"
+          )}
+          deleteTeam={deleteTeam}
+          deletePlayer={deletePlayer}
+        />
 
         <Button
           style={{
@@ -321,6 +455,8 @@ function HostView({ match, location }) {
             fontWeight: "bold",
             margin: 15,
           }}
+          disabled={!checkTeamsValid()}
+          onClick={startGame}
         >
           Start Game!
         </Button>
