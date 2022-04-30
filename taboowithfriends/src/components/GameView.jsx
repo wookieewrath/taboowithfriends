@@ -153,7 +153,7 @@ function GameView({ match, location }) {
         data_3.data().gameMode === "score" &&
         data_3
           .data()
-          .teams.filter((team) => team.score > data_3.data().scoreLimit)
+          .teams.filter((team) => team.score >= data_3.data().scoreLimit)
           .length > 0 &&
         data_3.data().activeTeam % data_3.data().teams.length === 0
       ) {

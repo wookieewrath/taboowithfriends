@@ -18,6 +18,7 @@ import "firebase/firestore";
 import firebase from "firebase/app";
 import { generateLobbyID } from "../lobbyIDGenerator";
 import { isUndefined } from "lodash";
+import "@fontsource/pushster";
 
 const theme = createMuiTheme({
   palette: {
@@ -207,7 +208,12 @@ function LandingPage() {
     return (
       <MuiThemeProvider theme={theme}>
         <div>
-          <Typography variant="h4">Welcome to taboowithfriends🥳!</Typography>
+          <Typography variant="h6" style={{ fontFamily: "Pushster" }}>
+            welcome to
+          </Typography>
+          <Typography variant="h3" style={{ fontFamily: "Pushster" }}>
+            TabooWithFriends🥳!
+          </Typography>
 
           <TextField
             color="secondary"
