@@ -8,6 +8,17 @@ import { Redirect } from "react-router-dom";
 import { randomAnimal } from "../animal";
 import { db, defaultGameSettings } from "../constants";
 import { generateID } from "../id";
+import FavoriteIcon from "@material-ui/icons/Favorite";
+import GitHubIcon from "@material-ui/icons/GitHub";
+import MailIcon from "@material-ui/icons/Mail";
+import HelpIcon from "@material-ui/icons/Help";
+import IconButton from "@material-ui/core/IconButton";
+import Acknowledgements from "./Acknowledgements";
+import "firebase/firestore";
+import firebase from "firebase/app";
+import { generateLobbyID } from "../lobbyIDGenerator";
+import { isUndefined } from "lodash";
+import "@fontsource/pushster";
 
 const theme = createMuiTheme({
   palette: {
@@ -18,29 +29,101 @@ const theme = createMuiTheme({
 });
 
 const newPlayerID = generateID();
+let newLobbyID;
+let roomID;
+let newGameID;
 
 function LandingPage() {
   const [nameInput, setNameInput] = useState("");
-  const [newRoomID, setNewRoomID] = useState("");
+  //const [roomID, setRoomID] = useState("");
   const [existingRoomID, setExistingRoomID] = useState("");
-
+  //const [newGameID, setNewGameID] = useState("");
   const [redirectHost, setRedirectHost] = useState(false);
   const [redirectPlayer, setRedirectPlayer] = useState(false);
-
   const [roomAlert, setRoomAlert] = useState(false);
+  const [openAcknowledgements, setOpenAcknowledgements] = useState(false);
+  const [disabledStart, setDisabledStart] = useState(false);
 
   const handleCreateSubmit = async (e) => {
-    const gameRef = await db.collection("Games").doc(newRoomID);
-    setNewRoomID(gameRef.id);
+    setDisabledStart(true);
+    let doc;
+    let lobbyRef;
+    async function checkIfExists() {
+      newLobbyID = generateLobbyID();
+      lobbyRef = await db.collection("Lobbies").doc(newLobbyID);
+      doc = await lobbyRef.get();
+    }
+
+    await checkIfExists();
+    while (isUndefined(doc) || doc.exists) {
+      await checkIfExists();
+      console.log("uhoh");
+    }
+    roomID = lobbyRef.id;
+    createGame(lobbyRef);
+  };
+
+  async function createGame(lobbyRef) {
+    const gameRef = await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Games")
+      .add({ playing: "lobby" });
+
+    let teamsRefID;
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .add({ players: [], teamName: randomAnimal() })
+      .then((doc) => {
+        teamsRefID = doc.id;
+      });
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc(teamsRefID)
+      .set({ id: teamsRefID }, { merge: true });
+
+    let teamsRefID2;
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .add({
+        players: [{ name: nameInput, isHost: true, id: newPlayerID }],
+        teamName: randomAnimal(),
+      })
+      .then((doc) => {
+        teamsRefID2 = doc.id;
+      });
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc(teamsRefID2)
+      .set({ id: teamsRefID2 }, { merge: true });
+
+    await db
+      .collection("Lobbies")
+      .doc(roomID)
+      .collection("Teams")
+      .doc("Float")
+      .set({
+        id: "Float",
+        players: [],
+        teamName: "Waiting Room",
+      });
+
+    newGameID = gameRef.id;
     const gameSettings = defaultGameSettings;
     const teamSettings = {
       teams: [
         {
           teamName: randomAnimal(),
           id: generateID(),
-          players: [
-            { name: `${nameInput} (Host)`, isHost: true, id: newPlayerID },
-          ],
+          players: [{ name: nameInput, isHost: true, id: newPlayerID }],
         },
         {
           teamName: randomAnimal(),
@@ -49,42 +132,74 @@ function LandingPage() {
         },
       ],
     };
-    await gameRef.set({ gameSettings }, { merge: true });
-    await gameRef.set({ teamSettings }, { merge: true });
+    await lobbyRef.set({ gameSettings }, { merge: true });
+    await lobbyRef.set({ teamSettings }, { merge: true });
     setRedirectHost(true);
-  };
+  }
 
-  const handleJoinSubmit = async (e) => {
-    const gameRef = await db.collection("Games").doc(existingRoomID);
-    const doc = await gameRef.get();
+  async function joinGame() {
+    setDisabledStart(true);
+
+    const gameRef = await db
+      .collection("Lobbies")
+      .doc(existingRoomID)
+      .collection("Games");
+
+    const lobbyID = await gameRef.where("playing", "==", "lobby").get();
+
+    const lobbyDoc = await db.collection("Lobbies").doc(existingRoomID);
+    const doc = await lobbyDoc.get();
+
     if (!doc.exists) {
       setRoomAlert(true);
+      setDisabledStart(false);
     } else {
-      const updatedTeam = doc.data().teamSettings.teams;
-      updatedTeam[0].players.push({
-        name: nameInput,
-        isHost: false,
-        id: newPlayerID,
-      });
-      await gameRef.update({ teamSettings: { teams: updatedTeam } });
-      setRedirectPlayer(true);
+      if (lobbyID && lobbyID.docs && lobbyID.docs[0]) {
+        newGameID = lobbyID.docs[0].id;
+      } else {
+        setDisabledStart(false);
+        console.log("Error :/", lobbyID);
+      }
+
+      const floatTeam = await db
+        .collection("Lobbies")
+        .doc(existingRoomID)
+        .collection("Teams")
+        .doc("Float");
+
+      floatTeam
+        .update({
+          players: firebase.firestore.FieldValue.arrayUnion({
+            id: newPlayerID,
+            isHost: false,
+            name: nameInput,
+          }),
+        })
+        .then(setRedirectPlayer(true));
     }
-  };
+  }
 
   if (redirectHost) {
+    sessionStorage.setItem("playerID", newPlayerID);
+    sessionStorage.setItem("lobbyID", newLobbyID);
+    sessionStorage.setItem("gameID", newGameID);
     return (
       <Redirect
         to={{
-          pathname: `/host/${newRoomID}/${newPlayerID}`,
+          pathname: `/host`,
           state: { hostName: nameInput },
         }}
       />
     );
   } else if (redirectPlayer) {
+    console.log(newGameID);
+    sessionStorage.setItem("playerID", newPlayerID);
+    sessionStorage.setItem("lobbyID", existingRoomID);
+    sessionStorage.setItem("gameID", newGameID);
     return (
       <Redirect
         to={{
-          pathname: `/play/${existingRoomID}/${newPlayerID}`,
+          pathname: `/play`,
           state: { playerName: nameInput },
         }}
       />
@@ -93,71 +208,82 @@ function LandingPage() {
     return (
       <MuiThemeProvider theme={theme}>
         <div>
-          <Typography variant="h4">
-            Welcome to taboowithfriends!
-            <Typography variant="caption">BETA</Typography>
+          <Typography variant="h6" style={{ fontFamily: "Pushster" }}>
+            welcome to
+          </Typography>
+          <Typography variant="h3" style={{ fontFamily: "Pushster" }}>
+            TabooWithFriends🥳!
           </Typography>
 
           <TextField
             color="secondary"
             label="What's your name?"
             inputProps={{
-              style: { textAlign: "center", textTransform: "capitalize" },
+              style: { textAlign: "center" },
             }}
             onChange={(e) => {
-              setNameInput(e.target.value.toUpperCase());
+              setNameInput(e.target.value);
             }}
             value={nameInput}
           />
           <p></p>
-          <Grid container spacing={4}>
+          <Grid container>
             <Grid item xs={12} sm={6}>
               <Button
                 variant="contained"
                 color="primary"
                 size="large"
-                style={{ margin: 15, backgroundColor: "#ffac12" }}
+                style={{
+                  backgroundColor: "#ffac12",
+                  marginTop: "20px",
+                  marginBottom: "50px",
+                }}
                 onClick={handleCreateSubmit}
-                disabled={!newRoomID || !nameInput}
+                disabled={!nameInput || disabledStart}
               >
-                CREATE GAME
+                Create New Lobby
               </Button>
-
+              {/* 
               <div>
                 <TextField
                   onChange={(e) =>
-                    setNewRoomID(e.target.value.replace(/\s/g, ""))
+                    setRoomID(e.target.value.toUpperCase().replace(/\s/g, ""))
                   }
-                  value={newRoomID}
+                  value={roomID}
                   variant="outlined"
-                  placeholder="New Room ID"
+                  placeholder="Lobby Name"
                   style={{ margin: 8 }}
                   color="secondary"
                   inputProps={{ style: { textAlign: "center" } }}
                 ></TextField>
-              </div>
+              </div> */}
             </Grid>
             <Grid item xs={12} sm={6}>
               <Button
                 variant="contained"
                 color="primary"
                 size="large"
-                style={{ margin: 15, backgroundColor: "#ffac12" }}
-                onClick={handleJoinSubmit}
-                disabled={!existingRoomID || !nameInput}
+                style={{
+                  backgroundColor: "#ffac12",
+                  marginTop: "20px",
+                }}
+                onClick={joinGame}
+                disabled={!existingRoomID || !nameInput || disabledStart}
               >
-                JOIN GAME
+                JOIN EXISTING LOBBY
               </Button>
 
               <div>
                 <TextField
                   onChange={(e) => {
                     setRoomAlert(false);
-                    setExistingRoomID(e.target.value.replace(/\s/g, ""));
+                    setExistingRoomID(
+                      e.target.value.toUpperCase().replace(/\s/g, "")
+                    );
                   }}
                   value={existingRoomID}
                   variant="outlined"
-                  placeholder="Existing Room ID"
+                  placeholder="Enter Lobby ID"
                   style={{ margin: 8 }}
                   color="secondary"
                   inputProps={{ style: { textAlign: "center" } }}
@@ -167,6 +293,23 @@ function LandingPage() {
               </div>
             </Grid>
           </Grid>
+          <br />
+
+          <div>
+            <Acknowledgements
+              open={openAcknowledgements}
+              setOpenAcknowledgements={setOpenAcknowledgements}
+            />
+            {/* <IconButton style={{ width: 50, height: 50, margin: 2 }}>
+              <GitHubIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></GitHubIcon>
+            </IconButton>
+            <IconButton style={{ width: 50, height: 50, margin: 2 }}>
+              <MailIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></MailIcon>
+            </IconButton>
+            <IconButton style={{ width: 50, height: 50, margin: 2 }}>
+              <HelpIcon style={{ width: 30, height: 30, margin: 8, fill: "DimGrey" }}></HelpIcon>
+            </IconButton> */}
+          </div>
         </div>
       </MuiThemeProvider>
     );
